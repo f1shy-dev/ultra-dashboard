@@ -60,18 +60,14 @@ export default function Page() {
 						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 2xl:grid-cols-4 gap-3">
 							{Object.entries(data)
 								.filter(([_, data]) => data.Region === region)
-								.map(([server, data]) => [
+								.map(([server, data]) => ({
 									server,
 									data,
-									GFN_SERVERID_TO_REGION_MAPPING[server] || null,
-								])
-								.sort((a, b) => a[1].QueuePosition - b[1].QueuePosition)
+									serverData: GFN_SERVERID_TO_REGION_MAPPING[server] || null,
+								}))
+								.sort((a, b) => a.data.QueuePosition - b.data.QueuePosition)
 								.map((elements) => {
-									const [server, data, serverData]: [
-										string,
-										GFNQueueObject,
-										{ region: string; is4080Server: boolean } | null,
-									] = elements as never;
+									const { server, data, serverData } = elements;
 									return (
 										<Card key={server} className="relative">
 											<Badge
