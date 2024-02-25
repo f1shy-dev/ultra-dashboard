@@ -1,0 +1,1 @@
+(()=>{importScripts("/rdll_kit/rdll_client_bpack.js");importScripts("/rdll_kit/global_rdll_config.js");importScripts(__rapidengine$config.sw || "/rdll_kit/rdll_sinvoke_engine.js");var e=new GlobalDLLServiceBackend;self.addEventListener("fetch",i=>i.respondWith(e.fetch(i)));})();

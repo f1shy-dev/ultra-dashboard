@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:ssl": "next dev --experimental-https --experimental-https-key ./certificates/localtest.me-key.pem --experimental-https-cert ./certificates/localtest.me.pem -H 127.0.0.1",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

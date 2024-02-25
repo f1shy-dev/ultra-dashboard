@@ -7,6 +7,7 @@ import { Playlist } from "../data/playlists";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
+	CursorArrowIcon,
 	DesktopIcon,
 	FaceIcon,
 	LapTimerIcon,
@@ -33,6 +34,11 @@ export const SIDEBAR_SECTIONS = [
 				icon: (p) => <LapTimerIcon {...p} />,
 				label: "GFN Queue",
 				route: "/tools/gfn_queue",
+			},
+			{
+				icon: (p) => <CursorArrowIcon {...p} />,
+				label: "Proxy Browser",
+				route: "/tools/uv_browser",
 			},
 		],
 	},
