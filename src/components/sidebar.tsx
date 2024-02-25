@@ -54,7 +54,13 @@ export function Sidebar({
 }: SidebarProps) {
 	const pathname = usePathname();
 	return (
-		<div className={cn("pb-12", className, isMobile && "text-white")}>
+		<div
+			className={cn(
+				"pb-12",
+				className,
+				isMobile && "text-black dark:text-white",
+			)}
+		>
 			<ScrollArea className={cn(!isMobile && "px-1 h-[calc(100vh-2rem)]")}>
 				<div className={cn("space-y-4", !isMobile && "py-4")}>
 					{SIDEBAR_SECTIONS.map((section) => (
