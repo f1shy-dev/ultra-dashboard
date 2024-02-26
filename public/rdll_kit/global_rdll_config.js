@@ -1,7 +1,7 @@
 (() => {
 	self.__rapidengine$config = {
-		prefix: "/rdll_kit/anti_tamper",
-		bare: "/bare/",
+		prefix: "/rdll_kit/anti_tamper/",
+		bare: ["https://bare-server.akku1139.workers.dev/"],
 		encodeUrl: RDLLCore.codec.xor.encode,
 		decodeUrl: RDLLCore.codec.xor.decode,
 		handler: "/rdll_kit/rdll_grab_handlepak.js",

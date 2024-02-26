@@ -15,6 +15,7 @@ import {
 	GFN_SERVERID_TO_REGION_MAPPING,
 	GFN_SERVER_DATA,
 } from "@/lib/gfn_server_data";
+import { ScrollArea } from "@/components/ui/scroll-area";
 dayjs.extend(RelativeTime);
 
 type GFNQueueObject = {
@@ -41,6 +42,10 @@ export default function Page() {
 	console.log(regions);
 
 	return (
+		<ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
+
+		<div className="h-full px-4 py-6 lg:px-8">
+
 		<div className="space-y-6">
 			{isLoading && (
 				<div>
@@ -98,5 +103,7 @@ export default function Page() {
 					</div>
 				))}
 		</div>
+		</div>
+		</ScrollArea>
 	);
 }

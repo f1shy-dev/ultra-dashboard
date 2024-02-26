@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Props = {
 	params: { id: string };
@@ -146,7 +147,9 @@ export default function AppBannerTool({ params, searchParams }: Props) {
 	const { toast } = useToast();
 	const router = useRouter();
 	return (
-		<>
+		<ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
+
+		<div className="h-full px-4 py-6 lg:px-8">
 			<div className="flex flex-col items-center w-full">
 				<div className="flex justify-center w-full">
 					<div className="grid flex-grow max-w-lg items-center gap-1.5">
@@ -260,6 +263,7 @@ export default function AppBannerTool({ params, searchParams }: Props) {
 					))}
 				</div>
 			</div>
-		</>
+		</div>
+		</ScrollArea>
 	);
 }

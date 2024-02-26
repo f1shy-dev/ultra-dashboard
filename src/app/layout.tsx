@@ -45,9 +45,8 @@ export default function RootLayout({
 								<div className="grid lg:grid-cols-5">
 									<Sidebar className="hidden lg:block" />
 									<div className="col-span-3 lg:col-span-4 lg:border-l">
-										<ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
-											<div className="h-full px-4 py-6 lg:px-8">{children}</div>
-										</ScrollArea>
+											{children}
+										
 									</div>
 								</div>
 							</div>
