@@ -81,10 +81,10 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 						if (e.key === "Escape" || e.key === "Enter") {
 							setOpen(false);
 							onShouldSubmit(value);
-							(e.target as HTMLInputElement).blur();
+							(e.target as HTMLInputElement).blur();	
 						}
 
-						if (typeof document !== undefined &&
+						if (typeof document !== "undefined" &&
 							(e.target as HTMLInputElement) === document.activeElement) {
 							setOpen(true);
 						}
