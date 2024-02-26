@@ -36,8 +36,9 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 }) => {
 	const [open, setOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
+	const isClient = typeof window !== "undefined" && typeof document !== "undefined";
 	const { data, isLoading, error } = useSWR(
-		typeof window !== undefined && inputRef.current === document.activeElement
+		isClient && inputRef.current === document.activeElement
 			? inputRef?.current?.value
 			: null,
 		(query: string) =>
@@ -83,7 +84,8 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 							(e.target as HTMLInputElement).blur();
 						}
 
-						if ((e.target as HTMLInputElement) === document.activeElement) {
+						if (typeof document !== undefined &&
+							(e.target as HTMLInputElement) === document.activeElement) {
 							setOpen(true);
 						}
 					}}
