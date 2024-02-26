@@ -37,7 +37,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 	const [open, setOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
 	const { data, isLoading, error } = useSWR(
-		inputRef.current === document.activeElement
+		typeof window !== undefined && inputRef.current === document.activeElement
 			? inputRef?.current?.value
 			: null,
 		(query: string) =>
