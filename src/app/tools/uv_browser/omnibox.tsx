@@ -17,22 +17,24 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "./ui/input";
+import { Input } from "../../../components/ui/input";
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
-import { Skeleton } from "./ui/skeleton";
+import { Skeleton } from "../../../components/ui/skeleton";
 import { CommandLoading } from "cmdk";
 
 type OmniboxProps = {
 	value: string;
 	setValue: (value: string) => void;
 	onShouldSubmit: (value: string) => void;
+	disabled?: boolean;
 };
 
 export const Omnibox: React.FC<OmniboxProps> = ({
 	value,
 	setValue,
 	onShouldSubmit,
+	disabled,
 }) => {
 	const [open, setOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -51,7 +53,6 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 				},
 			}).then((res) => res.json()),
 	);
-	console.log(data, isLoading, error);
 
 	useEffect(() => {
 		const click_handler = (e: MouseEvent) => {
@@ -71,6 +72,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 		<div className="relative flex flex-grow" data-omnibox>
 			<Command className="rounded-none">
 				<CommandInputIconLess
+				disabled={disabled}
 					ref={inputRef}
 					value={value}
 					onValueChange={(e) => setValue(e)}

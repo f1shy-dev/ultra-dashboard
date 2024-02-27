@@ -1,6 +1,6 @@
 "use client";
 
-import { Omnibox } from "@/components/omnibox";
+import { Omnibox } from "@/app/tools/uv_browser/omnibox";
 import { Button } from "@/components/ui/button";
 import {
 	Menubar,
@@ -9,7 +9,11 @@ import {
 	MenubarMenu,
 	MenubarSeparator,
 	MenubarShortcut,
+	MenubarSub,
+	MenubarSubContent,
+	MenubarSubTrigger,
 	MenubarTrigger,
+	MenubarCheckboxItem,
 } from "@/components/ui/menubar";
 import {
 	ArrowLeftIcon,
@@ -17,8 +21,10 @@ import {
 	DotsHorizontalIcon,
 	ReloadIcon,
 } from "@radix-ui/react-icons";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
+import { cn } from "@/lib/utils";
 
 type UVEncode = (encoded: string) => string;
 type UVDecode = (encoded: string) => string;
@@ -34,20 +40,50 @@ interface UVConfig {
 	decodeUrl: UVDecode;
 }
 
+interface DynamicConfig {
+	prefix: string;
+	encoding: string;
+	mode: string;
+	logLevel: number;
+	bare: {
+		version: string;
+		path: string;
+	};
+	tab: {
+		title: string;
+		icon: null;
+		ua: string;
+	};
+	assets: {
+		prefix: string;
+		files: {
+			[key: string]: string;
+		};
+	};
+	block: string[];
+}
+
 // declare const __rapidengine$config: UVConfig;
 declare global {
 	interface Window {
 		__rapidengine$config: UVConfig;
+		__dynamic$config: DynamicConfig;
 	}
 }
 
 export default function Page() {
+	const [proxyEngine, setProxyEngine] = useState<"ultraviolet" | "dynamic">(
+		"dynamic",
+	);
+
+	const [log, setLog] = useState<string[]>([]);
 	const [loadedScripts, setLoadedScripts] = useState<{
 		client: boolean;
 		config: boolean;
-		sw: "loading" | "loaded" | "error";
-		swError: string;
-	}>({ client: false, config: false, sw: "loading", swError: "" });
+	}>({ client: false, config: false });
+	const [swStatus, setSwStatus] = useState<"loading" | "loaded" | "error">(
+		"loading",
+	);
 	const [src, setSrc] = useState<string>("");
 	const [omniboxValue, setOmniboxValue] = useState<string>("");
 	const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -57,8 +93,20 @@ export default function Page() {
 	});
 
 	useEffect(() => {
-		if (loadedScripts.sw === "loaded") return;
-		if (!loadedScripts || !window.__rapidengine$config) return;
+		setSwStatus("loading");
+		setLog((l) => [...l, `Proxy engine changed to ${proxyEngine}`]);
+		setLoadedScripts({ client: false, config: false });
+		// window.location.reload();
+		// onShouldSubmit(omniboxValue);
+		setSrc("");
+		setOmniboxValue("");
+	
+	}, [proxyEngine]);
+
+	useEffect(() => {
+		if (swStatus === "loaded") return;
+		if (proxyEngine === "ultraviolet" && !loadedScripts) return;
+		if (proxyEngine === "ultraviolet" && !window.__rapidengine$config) return;
 		const { host, hostname, protocol } = window.location;
 
 		console.log(protocol, hostname);
@@ -68,179 +116,234 @@ export default function Page() {
 			hostname === "localhost" ||
 			hostname === "127.0.0.1"
 		) {
-			setLoadedScripts({
-				...loadedScripts,
-				sw: "error",
-				swError: "Not in production",
-			});
+			setSwStatus("error");
+
+			setLog((l) => [...l, "Error loading service worker - not in production"]);
 			return;
 		}
 
 		if (!navigator.serviceWorker) {
-			setLoadedScripts({
-				...loadedScripts,
-				sw: "error",
-				swError: "Service Worker not supported",
-			});
+			setSwStatus("error");
+			setLog((l) => [...l, "Error loading service worker - not supported"]);
 			return;
 		}
-		window.__rapidengine$config.bare = "https://bare-server.akku1139.workers.dev/";
-		const config = window.__rapidengine$config;
-		console.log(config);
+
+		if (proxyEngine === "ultraviolet") {
+			window.__rapidengine$config.bare = "https://bare-server.akku1139.workers.dev/";
+		}
+
 		(async () => {
 			try {
 				const res = await navigator.serviceWorker.register(
-					"/rdll_kit/rdll_sinvoke.js",
+					// "/rdll_kit/rdll_sinvoke.js",
+					proxyEngine === "ultraviolet"
+						? "/rdll_kit/rdll_sinvoke.js"
+						: "/dynamic_bootsw.js",
 					{
-						scope: "/rdll_kit/anti_tamper/",
+						scope:
+							proxyEngine === "ultraviolet"
+								? "/rdll_kit/anti_tamper/"
+								: "/dynserv_engine/",
 						updateViaCache: "none",
 					},
 				);
 				console.log(res);
-				setLoadedScripts({ ...loadedScripts, sw: "loaded" });
+				setLog((l) => [...l, "🎉 Service worker loaded sucessfully!"]);
+				setSwStatus("loaded");
 			} catch (e) {
-				setLoadedScripts({
-					...loadedScripts,
-					sw: "error",
-					swError: "An error occurred while registering the service worker",
-				});
+				setSwStatus("error");
+				setLog((l) => [...l, "Error loading service worker"]);
 			}
 		})();
-	}, [loadedScripts]);
+	}, [loadedScripts, proxyEngine, swStatus]);
 
 	const onShouldSubmit = (value: string) => {
 		if (value === "") return setSrc("");
-		if (!window.__rapidengine$config) return;
+
+		const encode = (value: string) => {
+			if (proxyEngine === "ultraviolet") {
+				return (
+					window.__rapidengine$config.prefix +
+					window.__rapidengine$config.encodeUrl(value)
+				);
+			}
+
+			return `/dynserv_engine/route?url=${encodeURIComponent(value)}`;
+		};
+
 		if (value.startsWith("http://") || value.startsWith("https://")) {
-			const url =
-				window.__rapidengine$config.prefix +
-				window.__rapidengine$config.encodeUrl(value);
-			return setSrc(url);
+			return setSrc(encode(value));
 		}
 
 		if (
 			value.match(
 				/[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/,
 			)
-		) {
-			const url =
-				window.__rapidengine$config.prefix +
-				window.__rapidengine$config.encodeUrl(`https://${value}`);
-			return setSrc(url);
-		}
+		)
+			return setSrc(encode(`https://${value}`));
 
-		const url =
-			window.__rapidengine$config.prefix +
-			window.__rapidengine$config.encodeUrl(
-				`https://www.google.com/search?q=${value}`,
-			);
-		setSrc(url);
+		setSrc(
+			encode(`https://www.duckduckgo.com/?q=${encodeURIComponent(value)}`),
+		);
 	};
 
 	return (
-		<div className="flex flex-col w-full h-full">
-			<div className="flex w-full flex-grow">
-				<div className="flex border-b h-full items-center">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="rounded-none border-0 w-9 h-full"
-						onClick={() => iframeRef.current?.contentWindow?.history.back()}
-						disabled={!history.back}
-					>
-						<ArrowLeftIcon />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="rounded-none border-0 w-9 h-full"
-						onClick={() => iframeRef.current?.contentWindow?.history.forward()}
-						disabled={!history.forward}
-					>
-						<ArrowRightIcon />
-					</Button>
-					<Button
-						variant="ghost"
-						size="icon"
-						className="rounded-none border-0 w-9 h-full"
-						onClick={() => iframeRef.current?.contentWindow?.location.reload()}
-					>
-						<ReloadIcon />
-					</Button>
-				</div>
-				<Omnibox
-					value={omniboxValue}
-					setValue={setOmniboxValue}
-					onShouldSubmit={onShouldSubmit}
-				/>
-				<Menubar className="rounded-none border-b border-x-0 border-t-0 px-2 lg:px-4">
-					<MenubarMenu>
-						<MenubarTrigger className="font-bold">
-							<DotsHorizontalIcon />
-						</MenubarTrigger>
-						<MenubarContent>
-							<MenubarItem>About DBUltra</MenubarItem>
-							<MenubarSeparator />
-							<MenubarItem>
-								Preferences... <MenubarShortcut>⌘,</MenubarShortcut>
-							</MenubarItem>
-							<MenubarSeparator />
-							<MenubarItem>
-								Hide Music... <MenubarShortcut>⌘H</MenubarShortcut>
-							</MenubarItem>
-							<MenubarItem>
-								Hide Others... <MenubarShortcut>⇧⌘H</MenubarShortcut>
-							</MenubarItem>
-							<MenubarShortcut />
-							<MenubarItem>
-								Quit Music <MenubarShortcut>⌘Q</MenubarShortcut>
-							</MenubarItem>
-						</MenubarContent>
-					</MenubarMenu>
-				</Menubar>
-			</div>
-			<Script
-				src="/rdll_kit/rdll_client_bpack.js"
-				onReady={() => setLoadedScripts({ ...loadedScripts, client: true })}
-			/>
-			{loadedScripts.client && (
-				<Script
-					src="/rdll_kit/global_rdll_config.js"
-					onReady={() => setLoadedScripts({ ...loadedScripts, config: true })}
-				/>
-			)}
-
-			<div className="w-full h-full flex">
-				{src.split("/").join("/").trim() !== "" && (
-					<iframe
-						ref={iframeRef}
-						src={src}
-						className="w-full h-[calc(100vh-4.5rem)]"
-						title="page"
-						onLoad={(e) => {
-							const frame = e.target as HTMLIFrameElement;
-							const _framedoc = frame.contentDocument;
-							if (window.__rapidengine$config && _framedoc) {
-								const url = new URL(_framedoc.location.href);
-								console.log(_framedoc.location.href);
-								const decoded = window.__rapidengine$config.decodeUrl(
-									url.pathname
-										.replace(window.__rapidengine$config.prefix, "")
-										.split("/")
-										.join("/")
-										.trim(),
-								);
-								setOmniboxValue(decoded);
-
-								setHistory({
-									back: (frame.contentWindow?.history.length || 0) > 1,
-									forward: (frame.contentWindow?.history.length || 0) > 1,
-								});
-							}
+		<>
+			{proxyEngine === "ultraviolet" && (
+				<>
+					<Script
+						src="/rdll_kit/rdll_client_bpack.js"
+						onReady={() => {
+							setLoadedScripts({ ...loadedScripts, client: true });
+							setLog((l) => [...l, "Loaded client script"]);
 						}}
 					/>
-				)}
+					{loadedScripts.client && (
+						<Script
+							src="/rdll_kit/global_rdll_config.js"
+							onReady={() => {
+								setLoadedScripts({ ...loadedScripts, config: true });
+								setLog((l) => [...l, "Loaded global configuration"]);
+								setLog((l) => [
+									...l,
+									`Bare: ${window.__rapidengine$config.bare}`,
+								]);
+							}}
+						/>
+					)}
+				</>
+			)}
+			<div className="flex flex-col w-full h-full">
+				<div className="flex w-full flex-grow">
+					<div
+						className={cn(
+							"flex h-full border-b items-center",
+							swStatus !== "loaded" && "border-b border-[#181818]",
+						)}
+					>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="rounded-none border-0 w-9 h-full"
+							onClick={() => iframeRef.current?.contentWindow?.history.back()}
+							disabled={swStatus !== "loaded" || !history.back}
+						>
+							<ArrowLeftIcon />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="rounded-none border-0 w-9 h-full"
+							onClick={() =>
+								iframeRef.current?.contentWindow?.history.forward()
+							}
+							disabled={swStatus !== "loaded" || !history.forward}
+						>
+							<ArrowRightIcon />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="rounded-none order-0 w-9 h-full"
+							onClick={() =>
+								iframeRef.current?.contentWindow?.location.reload()
+							}
+							disabled={swStatus !== "loaded"}
+						>
+							<ReloadIcon />
+						</Button>
+					</div>
+					<Omnibox
+						value={omniboxValue}
+						setValue={setOmniboxValue}
+						onShouldSubmit={onShouldSubmit}
+						disabled={swStatus !== "loaded"}
+					/>
+					<Menubar className="rounded-none border-b border-x-0 border-t-0 has-[:disabled]:opacity-50">
+						<MenubarMenu>
+							<MenubarTrigger
+								className="font-bold"
+								disabled={swStatus !== "loaded"}
+							>
+								<DotsHorizontalIcon />
+							</MenubarTrigger>
+							<MenubarContent>
+								<MenubarSub>
+									<MenubarSubTrigger>Proxy Engine</MenubarSubTrigger>
+									<MenubarSubContent>
+										<MenubarCheckboxItem
+											checked={proxyEngine === "ultraviolet"}
+											onCheckedChange={(ck) =>
+												ck && setProxyEngine("ultraviolet")
+											}
+										>
+											Ultraviolet
+										</MenubarCheckboxItem>
+										<MenubarCheckboxItem
+											checked={proxyEngine === "dynamic"}
+											onCheckedChange={(ck) => ck && setProxyEngine("dynamic")}
+										>
+											Dynamic
+										</MenubarCheckboxItem>
+									</MenubarSubContent>
+								</MenubarSub>
+							</MenubarContent>
+						</MenubarMenu>
+					</Menubar>
+				</div>
+
+				<div className="w-full h-full flex">
+					{src.split("/").join("/").trim() !== "" && swStatus === "loaded" ? (
+						<iframe
+							ref={iframeRef}
+							src={src}
+							className="w-full h-[calc(100vh-4.5rem)]"
+							title="page"
+							onLoad={(e) => {
+								const frame = e.target as HTMLIFrameElement;
+								const _framedoc = frame.contentDocument;
+								if (window.__rapidengine$config && _framedoc) {
+									const url = new URL(_framedoc.location.href);
+									console.log(_framedoc.location.href);
+									const prefix =
+										proxyEngine === "ultraviolet"
+											? window.__rapidengine$config.prefix
+											: "/dynserv_engine/";
+									const decoded = window.__rapidengine$config.decodeUrl(
+										url.pathname
+											.replace(prefix, "")
+											.split("/")
+											.join("/")
+											.trim(),
+									);
+									setOmniboxValue(decoded);
+
+									setHistory({
+										back: (frame.contentWindow?.history.length || 0) > 1,
+										forward: (frame.contentWindow?.history.length || 0) > 1,
+									});
+								}
+							}}
+						/>
+					) : (
+						<div className="w-full flex items-center justify-center h-[calc(100vh-4.5rem)]">
+							<ScrollArea className="h-64 w-full max-w-lg rounded-md border">
+								<div className="p-4">
+									<h4 className="mb-2 text-sm font-bold leading-none">Logs</h4>
+									{log.map((log, i) => (
+										<div
+											key={`${i}-${log}`}
+											className="text-sm font-mono animate-in slide-in-from-bottom-2"
+										>
+											{log}
+										</div>
+									))}
+								</div>
+							</ScrollArea>
+						</div>
+					)}
+				</div>
 			</div>
-		</div>
+		</>
 	);
 }
