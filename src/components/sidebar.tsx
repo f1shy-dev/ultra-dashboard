@@ -6,6 +6,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
+	ChatBubbleIcon,
 	CursorArrowIcon,
 	DesktopIcon,
 	FaceIcon,
@@ -38,6 +39,11 @@ export const SIDEBAR_SECTIONS = [
 				icon: (p) => <CursorArrowIcon {...p} />,
 				label: "Proxy Browser",
 				route: "/tools/uv_browser",
+			},
+			{
+				icon: (p) => <ChatBubbleIcon {...p} />,
+				label: "AI Chat",
+				route: "/tools/ai_chat",
 			},
 		],
 	},

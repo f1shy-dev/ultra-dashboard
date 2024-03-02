@@ -17,6 +17,10 @@ const fontSans = FontSans({
 export const metadata: Metadata = {
 	title: "DB Ultra",
 	description: "The dashboard to end them all.",
+	appleWebApp : {
+		capable: true,
+		title: "DB Ultra",
+	}
 };
 
 export default function RootLayout({
