@@ -1,13 +1,12 @@
+import { Menu } from "@/components/menu";
+import { Sidebar } from "@/components/sidebar";
+import { ThemeProvider } from "@/components/theme-provider";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
-import "./globals.css";
-import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Sidebar } from "@/components/sidebar";
-import { Menu } from "@/components/menu";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { SWRConfig } from "swr";
-
+import "./globals.css";
 
 const fontSans = FontSans({
 	subsets: ["latin"],
@@ -17,10 +16,10 @@ const fontSans = FontSans({
 export const metadata: Metadata = {
 	title: "DB Ultra",
 	description: "The dashboard to end them all.",
-	appleWebApp : {
+	appleWebApp: {
 		capable: true,
 		title: "DB Ultra",
-	}
+	},
 };
 
 export default function RootLayout({
@@ -29,7 +28,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<body
 				className={cn(
 					"min-h-screen bg-background font-sans antialiased overflow-y-hidden",
@@ -49,8 +48,7 @@ export default function RootLayout({
 								<div className="grid lg:grid-cols-5">
 									<Sidebar className="hidden lg:block" />
 									<div className="col-span-3 lg:col-span-4 lg:border-l">
-											{children}
-										
+										{children}
 									</div>
 								</div>
 							</div>

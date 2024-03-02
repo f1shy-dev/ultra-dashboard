@@ -1,9 +1,9 @@
-import Head from "next/head";
-import { Metadata, ResolvingMetadata } from "next";
-import { AppleAppSearchAPIApp } from "../app_banner/page";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Metadata, ResolvingMetadata } from "next";
+import Head from "next/head";
+import Link from "next/link";
+import { AppleAppSearchAPIApp } from "../app_banner/page";
 
 type Props = {
 	params: { id: string };
@@ -34,14 +34,12 @@ export default function Page({
 	const app: AppleAppSearchAPIApp = JSON.parse(searchParams.appData as string);
 	return (
 		<ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
-
-		<div className="h-full px-4 py-6 lg:px-8">
-
-			<h1>{app.attributes.name}</h1>
-			<Link href={"/tools/app_banner"}>
-				<Button>Back</Button>
-			</Link>
-		</div>
+			<div className="h-full px-4 py-6 lg:px-8">
+				<h1>{app.attributes.name}</h1>
+				<Link href={"/tools/app_banner"}>
+					<Button>Back</Button>
+				</Link>
+			</div>
 		</ScrollArea>
 	);
 }

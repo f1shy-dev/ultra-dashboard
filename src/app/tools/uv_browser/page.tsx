@@ -4,6 +4,7 @@ import { Omnibox } from "@/app/tools/uv_browser/omnibox";
 import { Button } from "@/components/ui/button";
 import {
 	Menubar,
+	MenubarCheckboxItem,
 	MenubarContent,
 	MenubarItem,
 	MenubarMenu,
@@ -13,18 +14,17 @@ import {
 	MenubarSubContent,
 	MenubarSubTrigger,
 	MenubarTrigger,
-	MenubarCheckboxItem,
 } from "@/components/ui/menubar";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
 	DotsHorizontalIcon,
 	ReloadIcon,
 } from "@radix-ui/react-icons";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
 
 type UVEncode = (encoded: string) => string;
 type UVDecode = (encoded: string) => string;
@@ -100,7 +100,6 @@ export default function Page() {
 		// onShouldSubmit(omniboxValue);
 		setSrc("");
 		setOmniboxValue("");
-	
 	}, [proxyEngine]);
 
 	useEffect(() => {
@@ -129,7 +128,8 @@ export default function Page() {
 		}
 
 		if (proxyEngine === "ultraviolet") {
-			window.__rapidengine$config.bare = "https://bare-server.akku1139.workers.dev/";
+			window.__rapidengine$config.bare =
+				"https://bare-server.akku1139.workers.dev/";
 		}
 
 		(async () => {

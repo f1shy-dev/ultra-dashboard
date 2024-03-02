@@ -1,0 +1,15 @@
+{
+    "formatter": {
+        "enabled": true,
+        "formatWithErrors": true,
+        "ignore": []
+    },
+    "linter": {
+        "enabled": true,
+        "rules": {
+            "a11y": {
+                "noSvgWithoutTitle": "off"
+            }
+        }
+    }
+}

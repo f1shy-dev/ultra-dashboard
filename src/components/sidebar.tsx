@@ -1,10 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { usePathname } from "next/navigation";
-import Link from "next/link";
+import { cn } from "@/lib/utils";
 import {
 	ChatBubbleIcon,
 	CursorArrowIcon,
@@ -13,8 +11,10 @@ import {
 	LapTimerIcon,
 	MagnifyingGlassIcon,
 } from "@radix-ui/react-icons";
-import React from "react";
 import type { IconProps } from "@radix-ui/react-icons/dist/types";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import React from "react";
 
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
 	isMobile?: boolean;
@@ -43,7 +43,8 @@ export const SIDEBAR_SECTIONS = [
 			{
 				icon: (p) => <ChatBubbleIcon {...p} />,
 				label: "AI Chat",
-				route: "/tools/ai_chat",
+				// biome-ignore lint/complexity/useRegexLiterals: <explanation>
+				route: ["/tools/ai_chat", new RegExp("/tools/ai_chat/.+")],
 			},
 		],
 	},
@@ -107,7 +108,11 @@ export function Sidebar({
 														? pathname === item.route
 															? "secondary"
 															: "ghost"
-														: item.route.includes(pathname)
+														: item.route.some((r) =>
+																	typeof r === "string"
+																		? r === pathname
+																		: (r as RegExp).test(pathname),
+															  )
 														  ? "secondary"
 														  : "ghost"
 												}

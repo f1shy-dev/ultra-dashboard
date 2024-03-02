@@ -2,7 +2,6 @@
 
 import { CaretSortIcon, CheckIcon } from "@radix-ui/react-icons";
 
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
 	Command,
@@ -17,11 +16,12 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "@/components/ui/popover";
-import { Input } from "../../../components/ui/input";
+import { cn } from "@/lib/utils";
+import { CommandLoading } from "cmdk";
 import { useEffect, useRef, useState } from "react";
 import useSWR from "swr";
+import { Input } from "../../../components/ui/input";
 import { Skeleton } from "../../../components/ui/skeleton";
-import { CommandLoading } from "cmdk";
 
 type OmniboxProps = {
 	value: string;
@@ -38,7 +38,8 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 }) => {
 	const [open, setOpen] = useState(false);
 	const inputRef = useRef<HTMLInputElement>(null);
-	const isClient = typeof window !== "undefined" && typeof document !== "undefined";
+	const isClient =
+		typeof window !== "undefined" && typeof document !== "undefined";
 	const { data, isLoading, error } = useSWR(
 		isClient && inputRef.current === document.activeElement
 			? inputRef?.current?.value
@@ -72,7 +73,7 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 		<div className="relative flex flex-grow" data-omnibox>
 			<Command className="rounded-none">
 				<CommandInputIconLess
-				disabled={disabled}
+					disabled={disabled}
 					ref={inputRef}
 					value={value}
 					onValueChange={(e) => setValue(e)}
@@ -83,11 +84,13 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 						if (e.key === "Escape" || e.key === "Enter") {
 							setOpen(false);
 							onShouldSubmit(value);
-							(e.target as HTMLInputElement).blur();	
+							(e.target as HTMLInputElement).blur();
 						}
 
-						if (typeof document !== "undefined" &&
-							(e.target as HTMLInputElement) === document.activeElement) {
+						if (
+							typeof document !== "undefined" &&
+							(e.target as HTMLInputElement) === document.activeElement
+						) {
 							setOpen(true);
 						}
 					}}
@@ -117,16 +120,17 @@ export const Omnibox: React.FC<OmniboxProps> = ({
 							</CommandEmpty>
 						)}
 
-						{
-							isLoading && [...Array(8)].map((_, i) => (
-							// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
-							<CommandItem key={i} disabled>
-								<Skeleton className="w-[150px] h-[1.25rem] rounded-sm" />
-							</CommandItem>
-						))}
+						{isLoading &&
+							[...Array(8)].map((_, i) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: <explanation>
+								<CommandItem key={i} disabled>
+									<Skeleton className="w-[150px] h-[1.25rem] rounded-sm" />
+								</CommandItem>
+							))}
 
 						{!isLoading &&
-							!error && value && 
+							!error &&
+							value &&
 							data?.map((item: { phrase: string }) => (
 								<CommandItem
 									key={item.phrase}

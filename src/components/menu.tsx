@@ -23,10 +23,10 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 
-import { ModeToggle } from "./theme-toggle";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
-import { Sidebar } from "./sidebar";
 import { SheetMenu } from "./sheet-menu";
+import { Sidebar } from "./sidebar";
+import { ModeToggle } from "./theme-toggle";
 
 export function Menu() {
 	return (

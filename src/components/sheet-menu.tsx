@@ -1,16 +1,16 @@
 "use client";
 
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
 import { HamburgerMenuIcon } from "@radix-ui/react-icons";
 import { useState } from "react";
 import { Sidebar } from "./sidebar";
-import {
-	Sheet,
-	SheetTrigger,
-	SheetContent,
-	SheetHeader,
-	SheetTitle,
-	SheetDescription,
-} from "@/components/ui/sheet";
 
 export const SheetMenu = () => {
 	const [open, setOpen] = useState(false);

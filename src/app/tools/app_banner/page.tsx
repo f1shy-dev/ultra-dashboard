@@ -1,9 +1,5 @@
 "use client";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
-import { useRef, useState } from "react";
 import {
 	Card,
 	CardDescription,
@@ -11,9 +7,13 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useToast } from "@/components/ui/use-toast";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { useRef, useState } from "react";
 
 type Props = {
 	params: { id: string };
@@ -148,122 +148,121 @@ export default function AppBannerTool({ params, searchParams }: Props) {
 	const router = useRouter();
 	return (
 		<ScrollArea className="h-full max-h-[calc(100vh-2rem)]">
-
-		<div className="h-full px-4 py-6 lg:px-8">
-			<div className="flex flex-col items-center w-full">
-				<div className="flex justify-center w-full">
-					<div className="grid flex-grow max-w-lg items-center gap-1.5">
-						<Label htmlFor="appname">App Name</Label>
-						<div className="flex items-center w-full  space-x-2 mt-1.5">
-							<Input
-								type="text"
-								id="appname"
-								placeholder="ChatGPT"
-								ref={inputRef}
-								value={searchParams.appname as string}
-							/>
-							<Button
-								type="submit"
-								disabled={loading}
-								onClick={async () => {
-									setLoading(true);
-									const query = inputRef.current?.value;
-									if (!query) {
-										toast({
-											title: "Error",
-											description: "Please enter an app name first...",
-										});
-										return setLoading(false);
-									}
-									const res = await fetch(
-										`https://worker-holy-king-306a.f1shylabs.workers.dev/search_app?limit=10&query=${query}`,
-									);
-									if (res.status !== 200) {
-										toast({
-											title: "Error",
-											description: "Something went wrong, please try again.",
-										});
-										return setLoading(false);
-									}
-									const data = await res.json();
-									console.log(data);
-									setApps(data);
-									setLoading(false);
-								}}
-							>
-								{loading ? "Loading..." : "Search"}
-							</Button>
+			<div className="h-full px-4 py-6 lg:px-8">
+				<div className="flex flex-col items-center w-full">
+					<div className="flex justify-center w-full">
+						<div className="grid flex-grow max-w-lg items-center gap-1.5">
+							<Label htmlFor="appname">App Name</Label>
+							<div className="flex items-center w-full  space-x-2 mt-1.5">
+								<Input
+									type="text"
+									id="appname"
+									placeholder="ChatGPT"
+									ref={inputRef}
+									value={searchParams.appname as string}
+								/>
+								<Button
+									type="submit"
+									disabled={loading}
+									onClick={async () => {
+										setLoading(true);
+										const query = inputRef.current?.value;
+										if (!query) {
+											toast({
+												title: "Error",
+												description: "Please enter an app name first...",
+											});
+											return setLoading(false);
+										}
+										const res = await fetch(
+											`https://worker-holy-king-306a.f1shylabs.workers.dev/search_app?limit=10&query=${query}`,
+										);
+										if (res.status !== 200) {
+											toast({
+												title: "Error",
+												description: "Something went wrong, please try again.",
+											});
+											return setLoading(false);
+										}
+										const data = await res.json();
+										console.log(data);
+										setApps(data);
+										setLoading(false);
+									}}
+								>
+									{loading ? "Loading..." : "Search"}
+								</Button>
+							</div>
 						</div>
 					</div>
-				</div>
 
-				<div className="grid w-full max-w-lg grid-cols-1 gap-4 mt-4 md:max-w-5xl md:grid-cols-2 lg:grid-cols-3">
-					{apps?.apps.data.map((app) => (
-						<>
-							<Card>
-								<CardHeader>
-									<Image
-										src={patchURL(
-											app.attributes.platformAttributes.ios.artwork.url,
-											300,
-											300,
-										)}
-										alt={app.attributes.name}
-										className="mb-2 rounded-lg"
-										width={64}
-										height={64}
-									/>
-									<CardTitle>{app.attributes.name}</CardTitle>
-									<CardDescription>
-										<p>
-											{app.attributes.platformAttributes.ios.subtitle}
-											<br />
-											<p className="md:hidden">
-												by {app.attributes.artistName}
+					<div className="grid w-full max-w-lg grid-cols-1 gap-4 mt-4 md:max-w-5xl md:grid-cols-2 lg:grid-cols-3">
+						{apps?.apps.data.map((app) => (
+							<>
+								<Card>
+									<CardHeader>
+										<Image
+											src={patchURL(
+												app.attributes.platformAttributes.ios.artwork.url,
+												300,
+												300,
+											)}
+											alt={app.attributes.name}
+											className="mb-2 rounded-lg"
+											width={64}
+											height={64}
+										/>
+										<CardTitle>{app.attributes.name}</CardTitle>
+										<CardDescription>
+											<p>
+												{app.attributes.platformAttributes.ios.subtitle}
+												<br />
+												<p className="md:hidden">
+													by {app.attributes.artistName}
+												</p>
+												<p className="hidden md:block">
+													by &quot;
+													{app.attributes.artistName.length > 25
+														? `${app.attributes.artistName.slice(0, 25)}...`
+														: app.attributes.artistName}
+													&quot;
+												</p>
 											</p>
-											<p className="hidden md:block">
-												by &quot;
-												{app.attributes.artistName.length > 25
-													? `${app.attributes.artistName.slice(0, 25)}...`
-													: app.attributes.artistName}
-												&quot;
-											</p>
-										</p>
-									</CardDescription>
-								</CardHeader>
-								<CardFooter>
-									<Button
-										onClick={() => {
-											// add an element to page
-											// <meta name="apple-itunes-app" content="app-id=id<app id from json>">
-											// and remove old one if exists
-											router.push(
-												`/tools/app_banner_view?appData=${encodeURIComponent(
-													JSON.stringify({
-														attributes: {
-															name: app.attributes.name,
-														},
-														id: app.id,
-													}),
-												)}`,
-											);
-											router.refresh();
-											// window.location.reload();
-											toast({
-												title: "Success",
-												description: "Banner has been loaded.",
-											});
-										}}
-									>
-										Load Banner
-									</Button>
-								</CardFooter>
-							</Card>
-						</>
-					))}
+										</CardDescription>
+									</CardHeader>
+									<CardFooter>
+										<Button
+											onClick={() => {
+												// add an element to page
+												// <meta name="apple-itunes-app" content="app-id=id<app id from json>">
+												// and remove old one if exists
+												router.push(
+													`/tools/app_banner_view?appData=${encodeURIComponent(
+														JSON.stringify({
+															attributes: {
+																name: app.attributes.name,
+															},
+															id: app.id,
+														}),
+													)}`,
+												);
+												router.refresh();
+												// window.location.reload();
+												toast({
+													title: "Success",
+													description: "Banner has been loaded.",
+												});
+											}}
+										>
+											Load Banner
+										</Button>
+									</CardFooter>
+								</Card>
+							</>
+						))}
+					</div>
 				</div>
 			</div>
-		</div>
 		</ScrollArea>
 	);
 }
