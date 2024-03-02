@@ -34,8 +34,9 @@ import {
 	PlusIcon,
 } from "@radix-ui/react-icons";
 import { Label } from "@/components/ui/label";
-import { RefObject, Suspense, useRef, useState } from "react";
-import { useLocalStorage } from "react-use";
+import { RefObject, Suspense, useMemo, useRef, useState } from "react";
+// import { useLocalStorage } from "react-use";
+import useLocalStorage from "@/lib/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn, generateShortUUID } from "@/lib/utils";
 import {
@@ -60,8 +61,6 @@ import {
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { RootFolder, Folder } from "./shared";
-import _NoSSR from "@/lib/NoSSR";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const iconMap = {
 	chat: MingcuteMessage2Line,
@@ -136,16 +135,6 @@ export default function FileBrowser() {
 
 		setAddDialogState("closed");
 	};
-
-	const NoSSR = _NoSSR({
-		loading: () => (
-			<div className="*:my-4 *:mx-3 *:h-4">
-				<Skeleton className="w-3/4" />
-				<Skeleton className="w-3/4" />
-				<Skeleton className="w-2/3" />
-			</div>
-		),
-	});
 
 	return (
 		<>
@@ -233,86 +222,83 @@ export default function FileBrowser() {
 
 				<CardContent>
 					<ScrollArea className="h-[calc(100vh-6.4rem)] sm:h-[26rem]">
-						<NoSSR>
-							{path.length > 0 && (
-								<div
-									onClick={() => {
-										setPath(path.slice(0, path.length - 1));
-									}}
-									onKeyDown={() => {
-										setPath(path.slice(0, path.length - 1));
-									}}
-									className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center text-muted-foreground"
-								>
-									<MingcuteArrowLeftUpLine className="w-4.5 h-4.5 mr-2" />
-									Back
-								</div>
-							)}
-							{currentFolder?.map((chat) => {
-								const IconComp = iconMap[chat.type];
-								return (
-									<ContextMenu key={chat.id}>
-										<ContextMenuTrigger asChild>
-											<div
-												onClick={() => {
-													if (chat.type === "folder")
-														return setPath([...path, chat.id]);
-													router.push(
-														`/tools/ai_chat/${[...path, chat.id].join("/")}`,
-													);
-												}}
-												onKeyDown={() => {
-													if (chat.type === "folder")
-														return setPath([...path, chat.id]);
-													router.push(
-														`/tools/ai_chat/${[...path, chat.id].join("/")}`,
-													);
-												}}
-												className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center"
-											>
-												<IconComp className="w-4.5 h-4.5 mr-2" />
-												{chat.name}
-												<div className="flex-grow" />
-												<ArrowRightIcon className="w-4 h-4 text-muted-foreground" />
-											</div>
-										</ContextMenuTrigger>
-										<ContextMenuContent>
-											<ContextMenuItem
-												onClick={() => {
-													router.push(
-														`/tools/ai_chat/${[...path, chat.id].join("/")}`,
-													);
-												}}
-											>
-												<MingcuteArrowRightUpLine className="w-4 h-4 mr-2" />{" "}
-												Open
-											</ContextMenuItem>
-											<ContextMenuItem onClick={() => {}}>
-												<MingcutePencilLine className="w-4 h-4 mr-2" /> Rename
-											</ContextMenuItem>
-											<ContextMenuItem
-												onClick={() => {}}
-												className="text-red-500 focus:text-red-500"
-											>
-												<MingcuteDelete2Line className="w-4 h-4 mr-2" /> Delete
-											</ContextMenuItem>
-										</ContextMenuContent>
-									</ContextMenu>
-								);
-							})}
+						{path.length > 0 && (
+							<div
+								onClick={() => {
+									setPath(path.slice(0, path.length - 1));
+								}}
+								onKeyDown={() => {
+									setPath(path.slice(0, path.length - 1));
+								}}
+								className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center text-muted-foreground"
+							>
+								<MingcuteArrowLeftUpLine className="w-4.5 h-4.5 mr-2" />
+								Back
+							</div>
+						)}
+						{currentFolder?.map((chat) => {
+							const IconComp = iconMap[chat.type];
+							return (
+								<ContextMenu key={chat.id}>
+									<ContextMenuTrigger asChild>
+										<div
+											onClick={() => {
+												if (chat.type === "folder")
+													return setPath([...path, chat.id]);
+												router.push(
+													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+												);
+											}}
+											onKeyDown={() => {
+												if (chat.type === "folder")
+													return setPath([...path, chat.id]);
+												router.push(
+													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+												);
+											}}
+											className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center"
+										>
+											<IconComp className="w-4.5 h-4.5 mr-2" />
+											{chat.name}
+											<div className="flex-grow" />
+											<ArrowRightIcon className="w-4 h-4 text-muted-foreground" />
+										</div>
+									</ContextMenuTrigger>
+									<ContextMenuContent>
+										<ContextMenuItem
+											onClick={() => {
+												router.push(
+													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+												);
+											}}
+										>
+											<MingcuteArrowRightUpLine className="w-4 h-4 mr-2" /> Open
+										</ContextMenuItem>
+										<ContextMenuItem onClick={() => {}}>
+											<MingcutePencilLine className="w-4 h-4 mr-2" /> Rename
+										</ContextMenuItem>
+										<ContextMenuItem
+											onClick={() => {}}
+											className="text-red-500 focus:text-red-500"
+										>
+											<MingcuteDelete2Line className="w-4 h-4 mr-2" /> Delete
+										</ContextMenuItem>
+									</ContextMenuContent>
+								</ContextMenu>
+							);
+						})}
 
-							{currentFolder?.length === 0 && (
-								<div
-									className={cn(
-										"text-muted-foreground text-sm flex items-center",
-										path.length > 0 && "py-2",
-									)}
-								>
-									No chats to see here... Click{" "}
-									<PlusIcon className="w-4 h-4 mx-0.5" /> to add one.
-								</div>
-							)}
-						</NoSSR>
+						{currentFolder?.length === 0 && (
+							<div
+								className={cn(
+									"text-muted-foreground text-sm flex items-center",
+									path.length > 0 && "py-2",
+								)}
+							>
+								No chats to see here... Click{" "}
+								<PlusIcon className="w-4 h-4 mx-0.5" /> to add one.
+							</div>
+						)}
 					</ScrollArea>
 				</CardContent>
 			</Card>
