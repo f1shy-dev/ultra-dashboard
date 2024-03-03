@@ -68,7 +68,7 @@ interface Message extends MessageBase<string> {
 	type: "user" | "model";
 }
 
-type ChatHistory = (Message | ToolResponse<unknown>)[];
+export type ChatHistory = (Message | ToolResponse<unknown>)[];
 
 type Tool<T, S> = {
 	id: string;
@@ -96,7 +96,7 @@ export interface InstructModelInit<Keys extends string>
 	extends _ModelInit<Keys> {
 	generate: (
 		prompt: string,
-		options: GenerationOptions,
+		options: Partial<GenerationOptions>,
 		userOptions: UserExposedOptionsValue<Keys, UserExposedOptions<Keys>>,
 	) => Promise<ModelResponse>;
 }
@@ -105,7 +105,7 @@ export interface ToollessModelInit<T extends string> extends _ModelInit<T> {
 	supportsTools: false;
 	generate: (
 		messages: ChatHistory,
-		options: GenerationOptions,
+		options: Partial<GenerationOptions>,
 		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
 	) => Promise<ModelResponse>;
 }
@@ -114,7 +114,7 @@ export interface ToolfulModelInit<T extends string> extends _ModelInit<T> {
 	supportsTools: true;
 	generate: (
 		messages: ChatHistory,
-		options: GenerationOptions,
+		options: Partial<GenerationOptions>,
 		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
 		tools: Tool<unknown, unknown>[],
 	) => Promise<ToolfulModelResponse>;

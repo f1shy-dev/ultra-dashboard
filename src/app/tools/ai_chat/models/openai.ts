@@ -57,11 +57,11 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 						role: m.type,
 						content: m.content,
 					})),
-					temperature: options.temperature,
-					max_tokens: options.maxTokens,
-					top_p: options.topP,
-					frequency_penalty: options.frequencyPenalty,
-					presence_penalty: options.presencePenalty,
+					temperature: options.temperature || 0.7,
+					max_tokens: options.maxTokens || 256,
+					top_p: options.topP || 1,
+					frequency_penalty: options.frequencyPenalty || 0,
+					presence_penalty: options.presencePenalty || 0,
 				}),
 			});
 

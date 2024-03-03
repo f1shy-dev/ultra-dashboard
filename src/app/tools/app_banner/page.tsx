@@ -198,67 +198,63 @@ export default function AppBannerTool({ params, searchParams }: Props) {
 
 					<div className="grid w-full max-w-lg grid-cols-1 gap-4 mt-4 md:max-w-5xl md:grid-cols-2 lg:grid-cols-3">
 						{apps?.apps.data.map((app) => (
-							<>
-								<Card>
-									<CardHeader>
-										<Image
-											src={patchURL(
-												app.attributes.platformAttributes.ios.artwork.url,
-												300,
-												300,
-											)}
-											alt={app.attributes.name}
-											className="mb-2 rounded-lg"
-											width={64}
-											height={64}
-										/>
-										<CardTitle>{app.attributes.name}</CardTitle>
-										<CardDescription>
-											<p>
-												{app.attributes.platformAttributes.ios.subtitle}
-												<br />
-												<p className="md:hidden">
-													by {app.attributes.artistName}
-												</p>
-												<p className="hidden md:block">
-													by &quot;
-													{app.attributes.artistName.length > 25
-														? `${app.attributes.artistName.slice(0, 25)}...`
-														: app.attributes.artistName}
-													&quot;
-												</p>
-											</p>
-										</CardDescription>
-									</CardHeader>
-									<CardFooter>
-										<Button
-											onClick={() => {
-												// add an element to page
-												// <meta name="apple-itunes-app" content="app-id=id<app id from json>">
-												// and remove old one if exists
-												router.push(
-													`/tools/app_banner_view?appData=${encodeURIComponent(
-														JSON.stringify({
-															attributes: {
-																name: app.attributes.name,
-															},
-															id: app.id,
-														}),
-													)}`,
-												);
-												router.refresh();
-												// window.location.reload();
-												toast({
-													title: "Success",
-													description: "Banner has been loaded.",
-												});
-											}}
-										>
-											Load Banner
-										</Button>
-									</CardFooter>
-								</Card>
-							</>
+							<Card key={app.id}>
+								<CardHeader>
+									<Image
+										src={patchURL(
+											app.attributes.platformAttributes.ios.artwork.url,
+											300,
+											300,
+										)}
+										alt={app.attributes.name}
+										className="mb-2 rounded-lg"
+										width={64}
+										height={64}
+									/>
+									<CardTitle>{app.attributes.name}</CardTitle>
+									<CardDescription>
+										{app.attributes.platformAttributes.ios.subtitle}
+										<br />
+										<span className="md:hidden">
+											by {app.attributes.artistName}
+										</span>
+										<span className="hidden md:block">
+											by &quot;
+											{app.attributes.artistName.length > 25
+												? `${app.attributes.artistName.slice(0, 25)}...`
+												: app.attributes.artistName}
+											&quot;
+										</span>
+									</CardDescription>
+								</CardHeader>
+								<CardFooter>
+									<Button
+										onClick={() => {
+											// add an element to page
+											// <meta name="apple-itunes-app" content="app-id=id<app id from json>">
+											// and remove old one if exists
+											router.push(
+												`/tools/app_banner_view?appData=${encodeURIComponent(
+													JSON.stringify({
+														attributes: {
+															name: app.attributes.name,
+														},
+														id: app.id,
+													}),
+												)}`,
+											);
+											router.refresh();
+											// window.location.reload();
+											toast({
+												title: "Success",
+												description: "Banner has been loaded.",
+											});
+										}}
+									>
+										Load Banner
+									</Button>
+								</CardFooter>
+							</Card>
 						))}
 					</div>
 				</div>

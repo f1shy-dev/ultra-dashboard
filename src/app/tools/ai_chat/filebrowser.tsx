@@ -60,7 +60,7 @@ import {
 } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RootFolder, Folder } from "./shared";
+import { RootFolder, Folder, Entry } from "./shared";
 
 const iconMap = {
 	chat: MingcuteMessage2Line,
@@ -118,7 +118,9 @@ export default function FileBrowser() {
 				name: nameInputRef.current.value,
 				type: addDialogState,
 				id: generateShortUUID(),
-			});
+				modelId: addDialogModel,
+				messages: [],
+			} as Entry);
 		}
 
 		if (path.length === 0) {
