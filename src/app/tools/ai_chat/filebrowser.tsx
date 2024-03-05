@@ -60,7 +60,8 @@ import {
 } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RootFolder, Folder, Entry } from "./shared";
+import { RootFolder, Folder, ChatStorage } from "./shared";
+import { useLocalStorageValue } from "@react-hookz/web";
 
 const iconMap = {
 	chat: MingcuteMessage2Line,
@@ -86,7 +87,21 @@ const nameMap = {
 };
 
 export default function FileBrowser() {
-	const [chats, setChats] = useLocalStorage<RootFolder>("ai_chats", []);
+	// const [chatFS, setChatFS] = useLocalStorage<RootFolder>("ai_chat_fs", []);
+	// const [chatStorage, setChatStorage] = useLocalStorage<ChatStorage>(
+	// 	"ai_chat_store",
+	// 	{},
+	// );
+	const { value: chatFS, set: setChatFS } = useLocalStorageValue<RootFolder>(
+		"ai_chat_fs",
+		{ defaultValue: [], initializeWithValue: false },
+	);
+	const { value: chatStorage, set: setChatStorage } =
+		useLocalStorageValue<ChatStorage>("ai_chat_store", {
+			defaultValue: {},
+			initializeWithValue: false,
+		});
+
 	const [addDialogState, setAddDialogState] = useState<
 		"closed" | "folder" | "chat" | "structured-prompt" | "instruct-prompt"
 	>("closed");
@@ -95,7 +110,7 @@ export default function FileBrowser() {
 	const [nameInputRef] = [useRef(null)] as RefObject<HTMLInputElement>[];
 	const router = useRouter();
 
-	let currentFolder = chats;
+	let currentFolder = chatFS;
 	for (const folderName of path) {
 		currentFolder = (currentFolder as Folder[]).find(
 			(folder) => folder.id === folderName,
@@ -104,39 +119,113 @@ export default function FileBrowser() {
 
 	const create = () => {
 		if (!nameInputRef.current?.value) return;
-		const cf_copy = currentFolder || chats || [];
+		const id = generateShortUUID();
+
+		// if (addDialogState === "folder") {
+		// 	cf_copy.push({
+		// 		name: nameInputRef.current.value,
+		// 		type: "folder",
+		// 		id: generateShortUUID(),
+		// 		entries: [],
+		// 	});
+		// }
+		// if (addDialogState !== "folder" && addDialogState !== "closed") {
+		// 	cf_copy.push({
+		// 		name: nameInputRef.current.value,
+		// 		type: addDialogState,
+		// 		id: generateShortUUID(),
+		// 		modelId: addDialogModel,
+		// 		messages: [],
+		// 	} as Entry);
+		// }
+
+		// if (path.length === 0) {
+		// 	setChats(cf_copy);
+		// } else {
+		// 	const pathCopy = [...path];
+		// 	const lastFolderId = pathCopy.pop();
+		// 	const lastFolder = chats?.find((folder) => folder.id === lastFolderId);
+		// 	if (lastFolder && lastFolder.type === "folder") {
+		// 		lastFolder.entries = cf_copy;
+		// 		setChats(chats);
+		// 	}
+		// }
+
+		const currentFS = currentFolder || chatFS || [];
+
 		if (addDialogState === "folder") {
-			cf_copy.push({
+			currentFS.push({
 				name: nameInputRef.current.value,
 				type: "folder",
-				id: generateShortUUID(),
+				id,
 				entries: [],
 			});
-		}
-		if (addDialogState !== "folder" && addDialogState !== "closed") {
-			cf_copy.push({
-				name: nameInputRef.current.value,
-				type: addDialogState,
-				id: generateShortUUID(),
-				modelId: addDialogModel,
-				messages: [],
-			} as Entry);
+		} else if (addDialogState === "chat") {
+			setChatStorage({
+				...chatStorage,
+				[id]: {
+					type: "chat",
+					id,
+					name: nameInputRef.current.value,
+					modelId: addDialogModel,
+					messages: [],
+				},
+			});
+			currentFS.push({
+				type: "pointer",
+				refId: id,
+				refType: "chat",
+			});
+		} else if (addDialogState !== "closed") {
+			setChatStorage({
+				...chatStorage,
+				[id]: {
+					type: addDialogState,
+					id,
+					name: nameInputRef.current.value,
+					modelId: addDialogModel,
+					prompt: "",
+					prompts: [],
+				},
+			});
+			currentFS.push({
+				type: "pointer",
+				refId: id,
+				refType: addDialogState,
+			});
 		}
 
+		// if (path.length === 0) {
+		// 	setChatFS(chatFS);
+		// } else {
+		// 	const pathCopy = [...path];
+		// 	const lastFolderId = pathCopy.pop();
+		// 	const lastFolder = chatFS?.find((folder) => folder.id === lastFolderId);
+		// 	if (lastFolder && lastFolder.type === "folder") {
+		// 		lastFolder.entries = chatFS;
+		// 		setChatFS(chatFS);
+		// 	}
+		// }
+
 		if (path.length === 0) {
-			setChats(cf_copy);
+			setChatFS(currentFS);
 		} else {
+			const copy = chatFS || [];
 			const pathCopy = [...path];
 			const lastFolderId = pathCopy.pop();
-			const lastFolder = chats?.find((folder) => folder.id === lastFolderId);
+			const lastFolder = copy?.find(
+				(folder) => folder.type === "folder" && folder.id === lastFolderId,
+			);
 			if (lastFolder && lastFolder.type === "folder") {
-				lastFolder.entries = cf_copy;
-				setChats(chats);
+				lastFolder.entries = currentFS;
+				setChatFS(copy);
 			}
 		}
 
 		setAddDialogState("closed");
 	};
+
+	if (chatStorage === undefined) return <div>Loading...</div>;
 
 	return (
 		<>
@@ -239,29 +328,31 @@ export default function FileBrowser() {
 							</div>
 						)}
 						{currentFolder?.map((chat) => {
-							const IconComp = iconMap[chat.type];
+							const IconComp =
+								iconMap["refId" in chat ? chat.refType : chat.type];
+							const id = "refId" in chat ? chat.refId : chat.id;
 							return (
-								<ContextMenu key={chat.id}>
+								<ContextMenu key={id}>
 									<ContextMenuTrigger asChild>
 										<div
 											onClick={() => {
 												if (chat.type === "folder")
 													return setPath([...path, chat.id]);
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 											onKeyDown={() => {
 												if (chat.type === "folder")
 													return setPath([...path, chat.id]);
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 											className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center"
 										>
 											<IconComp className="w-4.5 h-4.5 mr-2" />
-											{chat.name}
+											{"name" in chat ? chat.name : chatStorage[id]?.name}
 											<div className="flex-grow" />
 											<ArrowRightIcon className="w-4 h-4 text-muted-foreground" />
 										</div>
@@ -270,7 +361,7 @@ export default function FileBrowser() {
 										<ContextMenuItem
 											onClick={() => {
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 										>

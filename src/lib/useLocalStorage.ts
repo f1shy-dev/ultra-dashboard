@@ -5,7 +5,7 @@ const isServer = typeof window === "undefined";
 export default function useLocalStorage<T>(
 	key: string,
 	initialValue: T,
-): [T, (value: T) => void] {
+): [T, (value: T | ((val: T) => T)) => void, () => T] {
 	// State to store our value
 	// Pass initial state function to useState so logic is only executed once
 	const [storedValue, setStoredValue] = useState(() => initialValue);
@@ -37,21 +37,30 @@ export default function useLocalStorage<T>(
 
 	// Return a wrapped version of useState's setter function that ...
 	// ... persists the new value to localStorage.
-	const setValue = (value: T) => {
+	const setValue = (value: T | ((val: T) => T)) => {
 		try {
 			// Allow value to be a function so we have same API as useState
 			const valueToStore =
 				value instanceof Function ? value(storedValue) : value;
+			console.log("setting value", valueToStore, key);
+
 			// Save state
 			setStoredValue(valueToStore);
 			// Save to local storage
-			if (typeof window !== "undefined") {
-				window.localStorage.setItem(key, JSON.stringify(valueToStore));
-			}
+			// setTimeout(() => {
+			// 	if (typeof window !== "undefined") {
+			// 		window.localStorage.setItem(key, JSON.stringify(valueToStore));
+			// 	}
+			// }, 0);
 		} catch (error) {
 			// A more advanced implementation would handle the error case
 			console.log(error);
 		}
 	};
-	return [storedValue, setValue];
+
+	const renderDecoupledGetter = () => {
+		console.log("getting value", storedValue, key);
+		return storedValue;
+	};
+	return [storedValue, setValue, renderDecoupledGetter];
 }

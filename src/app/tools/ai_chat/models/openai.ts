@@ -1,3 +1,4 @@
+import { generateShortUUID } from "@/lib/utils";
 import {
 	ToolCall,
 	ToolfulModelInit,
@@ -69,7 +70,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 
 			if (data.error) {
 				return {
-					id: "error",
+					id: `error-${generateShortUUID()}`,
 					type: "model" as const,
 					status: "error",
 					content: data.error.message,
