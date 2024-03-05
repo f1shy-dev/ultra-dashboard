@@ -11,47 +11,13 @@ import { useMemo, useState } from "react";
 import { MingcuteMessage2Line } from "@/icons/Mingcute";
 import { ChatWindow } from "./chat_window";
 import { useLocalStorageValue } from "@react-hookz/web";
-import useLocalStorage from "@/lib/useLocalStorage";
+import { useAtom } from "jotai";
+import { singleChatAtom } from "@/app/tools/ai_chat/atoms";
 
 export default function Page({
 	params: { path },
 }: { params: { path: string[] } }) {
-	// const {
-	// 	value: chatStorage,
-	// 	set: setChatStorage,
-	// 	fetch: fetchCS,
-	// } = useLocalStorageValue<ChatStorage>("ai_chat_store", {
-	// 	defaultValue: {},
-	// 	initializeWithValue: false,
-	// });
-
-	const [chatStorage, setChatStorage, getCS] = useLocalStorage<ChatStorage>(
-		"ai_chat_store",
-		{},
-	);
-
-	const chat = chatStorage?.[path[path.length - 1]] as ChatEntry | undefined;
-
-	const updateChat: StorageUpdater<Entry> = (newChat) => {
-		// fetchCS();
-		const _chat = chatStorage?.[path[path.length - 1]] as ChatEntry | undefined;
-		console.log("newChat", { newChat, _chat });
-		if (!chatStorage || !_chat) return;
-		if (newChat instanceof Function) {
-			setChatStorage({
-				...chatStorage,
-				[_chat.id]: newChat(_chat),
-			});
-			console.log("newChat instanceof Function", {
-				newChat: newChat(_chat),
-				_chat,
-				chatStorage,
-			});
-			return;
-		}
-
-		setChatStorage({ ...chatStorage, [_chat.id]: newChat });
-	};
+	const [chat, setChat] = useAtom(useMemo(() => singleChatAtom(path), [path]));
 
 	return (
 		<div className="flex flex-col w-full h-[calc(100vh-2.25rem)]">
@@ -60,11 +26,7 @@ export default function Page({
 				{chat?.name}
 			</div>
 			{chat?.type === "chat" && (
-				<ChatWindow
-					chat={chat}
-					path={path}
-					updateChat={updateChat as StorageUpdater<ChatEntry>}
-				/>
+				<ChatWindow atom={[chat, setChat]} path={path} />
 			)}
 		</div>
 	);

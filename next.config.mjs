@@ -1,5 +1,5 @@
-// import million from "million/compiler";
-import MillionCompiler from "@million/lint";
+import million from "million/compiler";
+// import MillionCompiler from "@million/lint";
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -19,9 +19,15 @@ const nextConfig = {
 			},
 		],
 	},
+	experimental: {
+		swcPlugins: [
+			// ["@swc-jotai/debug-label", {}],
+			// ["@swc-jotai/react-refresh", {}],
+		],
+	},
 };
 
-// export default million.next(nextConfig, { auto: { rsc: true }, rsc: true });
-export default MillionCompiler.next({ rsc: true, auto: { rsc: true } })(
-	nextConfig,
-);
+export default million.next(nextConfig, { auto: { rsc: true }, rsc: true });
+// export default MillionCompiler.next({ rsc: true, auto: { rsc: true } })(
+// 	nextConfig,
+// );

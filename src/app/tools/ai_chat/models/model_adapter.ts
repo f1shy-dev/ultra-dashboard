@@ -13,11 +13,12 @@ type GenerationOptions = {
 
 export type UserExposedOption = {
 	type: "number" | "string" | "boolean";
-	default?: number | string | boolean;
+	default: number | string | boolean;
 	required?: boolean;
 	value: number | string | boolean;
 	name: string;
 	description?: string;
+	placeholder?: string;
 };
 
 // interface UserExposedSelectOption<T> {
@@ -41,6 +42,10 @@ type UserExposedOptionsValue<
 	T extends UserExposedOptions<Keys>,
 > = {
 	[K in keyof T]: T[K]["value"];
+};
+
+export type UserExposedOptionsValuesStore<T extends string> = {
+	[key: string]: UserExposedOptionsValue<T, UserExposedOptions<T>>;
 };
 
 type _ModelInit<T extends string> = {
@@ -108,6 +113,13 @@ export interface ToollessModelInit<T extends string> extends _ModelInit<T> {
 		options: Partial<GenerationOptions>,
 		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
 	) => Promise<ModelResponse>;
+	streamGenerate?: (
+		messages: ChatHistory,
+		options: Partial<GenerationOptions>,
+		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
+		onMessageUpdate: (message: ModelResponse) => void,
+		messageBase?: Partial<ModelResponse>,
+	) => void;
 }
 
 export interface ToolfulModelInit<T extends string> extends _ModelInit<T> {

@@ -12,6 +12,8 @@ const OpenAIOptions: UserExposedOptions<"apiKey"> = {
 		value: "",
 		name: "API Key",
 		description: "Your OpenAI API key",
+		default: "",
+		placeholder: "sk-1234567890",
 	},
 };
 
@@ -55,7 +57,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 				body: JSON.stringify({
 					model: modelId,
 					messages: messages.map((m) => ({
-						role: m.type,
+						role: m.type === "user" ? "user" : "assistant",
 						content: m.content,
 					})),
 					temperature: options.temperature || 0.7,
@@ -68,7 +70,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 
 			const data = await res.json();
 
-			if (data.error) {
+			if (data.error || !data.choices[0].message || !res.ok) {
 				return {
 					id: `error-${generateShortUUID()}`,
 					type: "model" as const,
@@ -92,7 +94,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 				}
 			} catch (e) {
 				return {
-					id: "error",
+					id: `error-${generateShortUUID()}`,
 					type: "model" as const,
 					status: "error",
 					content: "Model returned an invalid tool call",
@@ -101,7 +103,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 			}
 
 			return {
-				id: "success",
+				id: data.id,
 				type: "model" as const,
 				status: "success",
 				content: data.choices[0].message.content,
