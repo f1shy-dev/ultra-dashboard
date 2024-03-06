@@ -60,11 +60,14 @@ import {
 } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Checkbox } from "@/components/ui/checkbox";
+
 import { RootFolder, Folder, ChatStorage } from "./shared";
 import { atom, useAtom } from "jotai";
 import {
 	chatFilesystemAtom,
 	chatStorageAtom,
+	generalConfigAtom,
 	modelConfigAtom,
 } from "@/app/tools/ai_chat/atoms";
 import { UserExposedOption } from "./models/model_adapter";
@@ -378,44 +381,69 @@ const ProviderSettingsDialog = ({
 	setOpen,
 }: { open: boolean; setOpen: (open: boolean) => void }) => {
 	const [model, setModel] = useState("");
+	const [config, setConfig] = useAtom(generalConfigAtom);
 	const adapter = modelAdapters.find((ad) => ad.id === model);
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogContent>
 				<DialogHeader>
-					<DialogTitle>Provider Settings</DialogTitle>
-					<DialogDescription>
+					<DialogTitle>Settings</DialogTitle>
+				</DialogHeader>
+				<div className="flex flex-col">
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="enable-streamed-model-cb"
+							checked={config.ai.useStream}
+							onCheckedChange={(e) =>
+								setConfig({
+									...config,
+									ai: { ...config.ai, useStream: e === true },
+								})
+							}
+						/>
+						<label
+							htmlFor="enable-streamed-model-cb"
+							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+						>
+							Enable streamed model responses
+						</label>
+					</div>
+
+					<span className="font-semibold text-sm mt-4">Per-Model Settings</span>
+					<DialogDescription className="mb-2">
 						Change the global default settings for each AI model. These can also
 						be changed per chat.
 					</DialogDescription>
-				</DialogHeader>
+					<ModelPickerCombobox
+						value={model}
+						setValue={setModel}
+						btnClassName="w-full"
+					/>
+					<div className="mt-4 flex flex-col">
+						{adapter?.userExposedOptions !== undefined ? (
+							Object.keys(adapter.userExposedOptions).map((key) => {
+								const option =
+									// biome-ignore lint/style/noNonNullAssertion: <explanation>
+									adapter.userExposedOptions![
+										key as keyof typeof adapter.userExposedOptions
+									];
 
-				<ModelPickerCombobox
-					value={model}
-					setValue={setModel}
-					btnClassName="w-full"
-				/>
-
-				{adapter?.userExposedOptions !== undefined ? (
-					Object.keys(adapter.userExposedOptions).map((key) => {
-						const option =
-							// biome-ignore lint/style/noNonNullAssertion: <explanation>
-							adapter.userExposedOptions![
-								key as keyof typeof adapter.userExposedOptions
-							];
-
-						return (
-							<ModelSettingElemnt
-								optKey={key}
-								option={option}
-								model={model}
-								key={`${model}-${key}`}
-							/>
-						);
-					})
-				) : (
-					<div>No settings available for this model.</div>
-				)}
+								return (
+									<ModelSettingElemnt
+										optKey={key}
+										option={option}
+										model={model}
+										key={`${model}-${key}`}
+									/>
+								);
+							})
+						) : (
+							<div className="text-muted-foreground text-sm">
+								No settings available for this model.
+							</div>
+						)}
+					</div>
+				</div>
 			</DialogContent>
 		</Dialog>
 	);

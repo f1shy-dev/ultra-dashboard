@@ -55,6 +55,7 @@ type _ModelInit<T extends string> = {
 	userExposedOptions?: UserExposedOptions<T>;
 	supportedGenerationOptions: (keyof GenerationOptions)[];
 	supportsTools: boolean;
+	streamAnimationWordClamp?: number;
 };
 
 type MessageBase<T> = {
@@ -62,6 +63,7 @@ type MessageBase<T> = {
 	content: T;
 	status: "success" | "error";
 	timestamp: number;
+	isDoneStreaming?: boolean;
 };
 
 interface ToolResponse<S> extends MessageBase<S> {
@@ -108,26 +110,36 @@ export interface InstructModelInit<Keys extends string>
 
 export interface ToollessModelInit<T extends string> extends _ModelInit<T> {
 	supportsTools: false;
-	generate: (
-		messages: ChatHistory,
-		options: Partial<GenerationOptions>,
-		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
-	) => Promise<ModelResponse>;
-	streamGenerate?: (
-		messages: ChatHistory,
-		options: Partial<GenerationOptions>,
-		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
-		onMessageUpdate: (message: ModelResponse) => void,
-		messageBase?: Partial<ModelResponse>,
-	) => void;
+	generate: (config: {
+		messages: ChatHistory;
+		options: Partial<GenerationOptions>;
+		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
+	}) => Promise<ModelResponse>;
+
+	streamGenerate?: (config: {
+		messages: ChatHistory;
+		options: Partial<GenerationOptions>;
+		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
+		onMessageUpdate: (message: ModelResponse) => void;
+		messageBase?: Partial<ModelResponse>;
+	}) => void;
 }
 
 export interface ToolfulModelInit<T extends string> extends _ModelInit<T> {
 	supportsTools: true;
-	generate: (
-		messages: ChatHistory,
-		options: Partial<GenerationOptions>,
-		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>,
-		tools: Tool<unknown, unknown>[],
-	) => Promise<ToolfulModelResponse>;
+	generate: (config: {
+		messages: ChatHistory;
+		options: Partial<GenerationOptions>;
+		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
+		tools: Tool<unknown, unknown>[];
+	}) => Promise<ToolfulModelResponse>;
+
+	streamGenerate?: (config: {
+		messages: ChatHistory;
+		options: Partial<GenerationOptions>;
+		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
+		onMessageUpdate: (message: ModelResponse) => void;
+		tools: Tool<unknown, unknown>[];
+		messageBase?: Partial<ModelResponse>;
+	}) => void;
 }

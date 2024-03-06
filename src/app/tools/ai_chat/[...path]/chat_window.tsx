@@ -10,11 +10,12 @@ import {
 	MingcuteUser1Line,
 } from "@/icons/Mingcute";
 import { Textarea } from "@/components/ui/textarea";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { modelAdapters } from "../models";
 import { cn, generateShortUUID } from "@/lib/utils";
 import { useAtom, atom as atomFactory, useAtomValue } from "jotai";
-import { modelConfigAtom } from "../atoms";
+import { generalConfigAtom, modelConfigAtom } from "../atoms";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // million-ignore
 export const ChatWindow: React.FC<{
@@ -35,12 +36,16 @@ export const ChatWindow: React.FC<{
 	const _optsAtom = useMemo(() => {
 		return atomFactory((get) => get(modelConfigAtom)[chat?.modelId]);
 	}, [chat?.modelId]);
+	const config = useAtomValue(generalConfigAtom);
 	const optsAtom = useAtomValue(_optsAtom);
+	const [isGenerating, setIsGenerating] = useState(false);
 
 	const textAreaRef = useRef<HTMLTextAreaElement>(null);
+	const chatScrollAreaRef = useRef<HTMLDivElement>(null);
+	const [isScrolling, setIsScrolling] = useState(false);
 
 	const send = async () => {
-		if (!modelAdapter || !textAreaRef.current || !chat) return;
+		if (!modelAdapter || !textAreaRef.current || !chat || isGenerating) return;
 		const content = textAreaRef.current.value.trim();
 		if (content === "") return;
 		textAreaRef.current.value = "";
@@ -61,56 +66,169 @@ export const ChatWindow: React.FC<{
 			messages,
 		}));
 
-		console.log("chat.messages", chat.messages);
-		const data = await modelAdapter.generate(
-			messages,
-			{},
-			{ apiKey: optsAtom?.apiKey || "" },
-			[],
-		);
-
-		setChat((old) => ({
-			...(old as ChatEntry),
-			messages: [
-				...(old as ChatEntry).messages,
-				{
-					...data,
+		if (modelAdapter.streamGenerate && config.ai.useStream) {
+			setIsGenerating(true);
+			await modelAdapter.streamGenerate({
+				messages,
+				options: {},
+				userOptions: { apiKey: optsAtom?.apiKey || "" },
+				tools: [],
+				onMessageUpdate(message) {
+					setChat((old) => {
+						const messages = [...(old as ChatEntry).messages].filter(
+							(m) => m.id !== message.id,
+						);
+						messages.push(message);
+						return {
+							...(old as ChatEntry),
+							messages,
+						};
+					});
 				},
-			],
-		}));
+			});
+			setIsScrolling(false);
+			setTimeout(() => {
+				chatScroll();
+				setIsGenerating(false);
+			}, 50);
+		} else {
+			setIsGenerating(true);
+			const baseMessage = {
+				id: `model-${generateShortUUID()}`,
+				content: "",
+				status: "success" as const,
+				timestamp: Date.now(),
+				type: "model" as const,
+			};
+			setChat((old) => ({
+				...(old as ChatEntry),
+				messages: [...(old as ChatEntry).messages, baseMessage],
+			}));
+
+			const data = await modelAdapter.generate({
+				messages,
+				options: {},
+				userOptions: { apiKey: optsAtom?.apiKey || "" },
+				tools: [],
+			});
+
+			setChat((old) => {
+				const messages = [...(old as ChatEntry).messages].filter(
+					(m) => m.id !== baseMessage.id,
+				);
+				messages.push({
+					...data,
+					id: baseMessage.id,
+				});
+				return {
+					...(old as ChatEntry),
+					messages,
+				};
+			});
+			setIsScrolling(false);
+			setTimeout(() => {
+				chatScroll();
+				setIsGenerating(false);
+			}, 50);
+		}
 	};
+
+	const chatScroll = () => {
+		if (chatScrollAreaRef.current && !isScrolling && isGenerating) {
+			setIsScrolling(true);
+			chatScrollAreaRef.current.scroll({
+				top: chatScrollAreaRef.current.scrollHeight,
+				behavior: "smooth",
+			});
+			setTimeout(() => {
+				setIsScrolling(false);
+			}, 50);
+		}
+	};
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	useEffect(chatScroll, [chat?.messages]);
+
 	if (!modelAdapter) return <div>Internal error: Model not found</div>;
 	if (!chat) return <div>Internal error: Chat not found</div>;
 
 	return (
 		<div className="h-full w-full relative flex flex-col items-center">
-			<ScrollArea className="h-full w-full p-4 md:p-6 max-w-4xl">
-				<div className="flex flex-col space-y-4">
+			<ScrollArea
+				className="w-full px-4 md:px-6 max-w-4xl h-[calc(100vh-4.6rem)]"
+				viewportRef={chatScrollAreaRef}
+			>
+				<div className="flex flex-col space-y-4 first:mt-4 last:mb-28">
 					{chat.messages
 						.filter((m) => m.type !== "tool-call")
-						.map((m, i) => (
-							<div key={m.id} className="flex text-left">
-								<div className="border rounded-lg h-8 w-8 shrink-0 mr-2 flex items-center justify-center">
-									{m.type === "user" ? (
-										<MingcuteUser1Line className="w-4 h-4 shrink-0" />
-									) : (
-										<MingcuteChat4Line className="w-4 h-4 shrink-0" />
-									)}
+						.map((m, msg_idx) => {
+							const _content = (m.content || "") as string;
+							const split_content = _content.split(" ");
+
+							const clampLen = modelAdapter.streamAnimationWordClamp || 8;
+							const fadeClass =
+								clampLen > 8
+									? clampLen > 12
+										? "animate-fade-in-1"
+										: "animate-fade-in-2"
+									: "animate-fade-in-4";
+
+							const clamped_length =
+								split_content.length > clampLen
+									? clampLen
+									: split_content.length;
+
+							return (
+								<div key={m.id} className="flex text-left">
+									<div className="border rounded-lg h-8 w-8 shrink-0 mr-2 flex items-center justify-center">
+										{m.type === "user" ? (
+											<MingcuteUser1Line className="w-4 h-4 shrink-0" />
+										) : (
+											<MingcuteChat4Line className="w-4 h-4 shrink-0" />
+										)}
+									</div>
+									<span
+										className={cn(
+											"text-sm w-full",
+											m.status === "error" ? "text-red-500" : "",
+										)}
+									>
+										{isGenerating &&
+											msg_idx === chat.messages.length - 1 &&
+											_content.trim().length === 0 && (
+												<div className="flex flex-col space-y-2">
+													<Skeleton className="w-3/4 h-4 rounded-md" />
+													<Skeleton className="w-1/2 h-4 rounded-md" />
+													<Skeleton className="w-[62.5%] h-4 rounded-md" />
+												</div>
+											)}
+
+										{(msg_idx !== chat.messages.length - 1 ||
+											m.isDoneStreaming !== false) &&
+											_content}
+
+										{msg_idx === chat.messages.length - 1 &&
+											m.isDoneStreaming === false && (
+												<>
+													{split_content.slice(0, clamped_length).join(" ")}{" "}
+													{split_content
+														.slice(-1 * (split_content.length - clamped_length))
+														.map((line, i) => (
+															<>
+																<span key={line} className={fadeClass}>
+																	{line}
+																</span>{" "}
+															</>
+														))}
+												</>
+											)}
+									</span>
 								</div>
-								<span
-									className={cn(
-										"text-sm",
-										m.status === "error" ? "text-red-500" : "",
-									)}
-								>
-									{m.content as string}
-								</span>
-							</div>
-						))}
+							);
+						})}
 				</div>
 			</ScrollArea>
 
-			<div className="absolute bottom-4 w-full px-4 md:max-w-2xl flex">
+			<div className="absolute bottom-0 w-full p-4 rounded-t-xl border md:max-w-2xl flex bg-background/50 backdrop-blur">
 				<Textarea
 					placeholder="Type a message"
 					className="max-h-[200px]"
@@ -125,6 +243,7 @@ export const ChatWindow: React.FC<{
 				/>
 
 				<Button
+					disabled={isGenerating}
 					className="ml-2 shrink-0"
 					size="icon"
 					onClick={async () => {

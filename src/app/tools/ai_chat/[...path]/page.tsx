@@ -23,7 +23,7 @@ export default function Page({
 		<div className="flex flex-col w-full h-[calc(100vh-2.25rem)]">
 			<div className="flex border-b px-3 py-1.5 text-sm items-center font-medium h-[2.25rem]">
 				<MingcuteMessage2Line className="w-4 h-4 mr-2" />
-				{chat?.name}
+				{chat?.name || ""}
 			</div>
 			{chat?.type === "chat" && (
 				<ChatWindow atom={[chat, setChat]} path={path} />

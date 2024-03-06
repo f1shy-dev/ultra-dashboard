@@ -3,7 +3,6 @@
 import {
 	Sheet,
 	SheetContent,
-	SheetDescription,
 	SheetHeader,
 	SheetTitle,
 	SheetTrigger,
@@ -23,10 +22,8 @@ export const SheetMenu = () => {
 			<SheetContent side={"left-full"}>
 				<SheetHeader className="text-left">
 					<SheetTitle>Dashboard Ultra</SheetTitle>
-					<SheetDescription>
-						<Sidebar isMobile closeSidebar={() => setOpen(false)} />
-					</SheetDescription>
 				</SheetHeader>
+				<Sidebar isMobile closeSidebar={() => setOpen(false)} />
 			</SheetContent>
 		</Sheet>
 	);

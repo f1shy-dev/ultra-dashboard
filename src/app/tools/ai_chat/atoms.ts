@@ -8,6 +8,18 @@ export const modelConfigAtom = withImmer(
 	atomWithStorage<UserExposedOptionsValuesStore<string>>("atom-model_opts", {}),
 );
 
+export const generalConfigAtom = withImmer(
+	atomWithStorage<{
+		ai: {
+			useStream: boolean;
+		};
+	}>("atom-config", {
+		ai: {
+			useStream: true,
+		},
+	}),
+);
+
 export const chatStorageAtom = withImmer(
 	atomWithStorage<ChatStorage>("atom-chat_storage", {}),
 );

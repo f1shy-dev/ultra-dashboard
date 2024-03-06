@@ -1,9 +1,17 @@
 import { generateShortUUID } from "@/lib/utils";
 import {
+	ModelResponse,
 	ToolCall,
 	ToolfulModelInit,
 	UserExposedOptions,
 } from "./model_adapter";
+import {
+	CustomEventDataType,
+	CustomEventType,
+	SSE,
+	SSEOptions,
+	SSEOptionsMethod,
+} from "sse-ts";
 
 const OpenAIOptions: UserExposedOptions<"apiKey"> = {
 	apiKey: {
@@ -47,7 +55,8 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 		],
 		userExposedOptions,
 		supportsTools: true,
-		generate: async (messages, options, userOptions) => {
+		streamAnimationWordClamp: 3,
+		generate: async ({ messages, options, userOptions }) => {
 			const res = await fetch("https://api.openai.com/v1/chat/completions", {
 				method: "POST",
 				headers: {
@@ -110,6 +119,109 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 				timestamp: Date.now(),
 				toolCalls,
 			};
+		},
+
+		streamGenerate: async ({
+			messages,
+			options,
+			userOptions,
+			onMessageUpdate,
+			messageBase,
+		}) => {
+			const source = new SSE("https://api.openai.com/v1/chat/completions", {
+				method: SSEOptionsMethod.POST,
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${userOptions.apiKey}`,
+				},
+				payload: JSON.stringify({
+					model: modelId,
+					messages: messages.map((m) => ({
+						role: m.type === "user" ? "user" : "assistant",
+						content: m.content,
+					})),
+					temperature: options.temperature || 0.7,
+					max_tokens: options.maxTokens || 256,
+					top_p: options.topP || 1,
+					frequency_penalty: options.frequencyPenalty || 0,
+					presence_penalty: options.presencePenalty || 0,
+					stream: true,
+				}),
+			});
+
+			// biome-ignore lint/style/useConst: <explanation>
+			let msg: Partial<ModelResponse> = {
+				id: `stream-${generateShortUUID()}`,
+				type: "model" as const,
+				status: "success",
+				timestamp: Date.now(),
+				content: "",
+				isDoneStreaming: false,
+				...(messageBase || {}),
+			};
+
+			const finishedAnnouncer = new EventTarget();
+			const finish = () => {
+				source.close();
+				const _msg = {
+					...msg,
+					isDoneStreaming: undefined,
+				};
+				onMessageUpdate(_msg as ModelResponse);
+				finishedAnnouncer.dispatchEvent(new Event("done"));
+			};
+
+			source.addEventListener("message", (event: CustomEventType) => {
+				const dataEvent = event as CustomEventDataType;
+				if (
+					typeof dataEvent.data === "string" &&
+					["done", "[done]", "done\n"].includes(
+						dataEvent.data.trim().toLowerCase(),
+					)
+				) {
+					return finish();
+				}
+				const payload = JSON.parse(dataEvent.data.split("data: ")[0] || "{}");
+
+				if (
+					!payload.choices ||
+					!payload.choices[0] ||
+					!payload.choices[0].delta
+				) {
+					return;
+				}
+
+				if (payload.choices[0].finish_reason) {
+					return finish();
+				}
+
+				msg = {
+					...msg,
+					content: msg.content + payload.choices[0].delta.content,
+				};
+
+				onMessageUpdate(msg as ModelResponse);
+			});
+
+			source.addEventListener("error", (event: CustomEventType) => {
+				console.error(event);
+			});
+
+			source.addEventListener("open", (event: CustomEventType) => {
+				console.log(event);
+			});
+
+			source.addEventListener("close", (event: CustomEventType) => {
+				console.log(event);
+			});
+
+			source.stream();
+
+			await new Promise((resolve) => {
+				finishedAnnouncer.addEventListener("done", () => {
+					resolve(null);
+				});
+			});
 		},
 	};
 
