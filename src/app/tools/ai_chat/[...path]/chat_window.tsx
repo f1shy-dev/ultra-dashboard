@@ -71,7 +71,10 @@ export const ChatWindow: React.FC<{
 			await modelAdapter.streamGenerate({
 				messages,
 				options: {},
-				userOptions: { apiKey: optsAtom?.apiKey || "" },
+				userOptions: {
+					apiKey: optsAtom?.apiKey || "",
+					useProxy: optsAtom?.useProxy,
+				},
 				tools: [],
 				onMessageUpdate(message) {
 					setChat((old) => {
@@ -108,7 +111,10 @@ export const ChatWindow: React.FC<{
 			const data = await modelAdapter.generate({
 				messages,
 				options: {},
-				userOptions: { apiKey: optsAtom?.apiKey || "" },
+				userOptions: {
+					apiKey: optsAtom?.apiKey || "",
+					useProxy: optsAtom?.useProxy,
+				},
 				tools: [],
 			});
 
@@ -214,7 +220,10 @@ export const ChatWindow: React.FC<{
 														.slice(-1 * (split_content.length - clamped_length))
 														.map((line, i) => (
 															<>
-																<span key={line} className={fadeClass}>
+																<span
+																	key={`${i}-${line}`}
+																	className={fadeClass}
+																>
 																	{line}
 																</span>{" "}
 															</>

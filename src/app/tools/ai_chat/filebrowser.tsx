@@ -419,7 +419,7 @@ const ProviderSettingsDialog = ({
 						setValue={setModel}
 						btnClassName="w-full"
 					/>
-					<div className="mt-4 flex flex-col">
+					<div className="mt-4 flex flex-col space-y-2">
 						{adapter?.userExposedOptions !== undefined ? (
 							Object.keys(adapter.userExposedOptions).map((key) => {
 								const option =
@@ -463,9 +463,11 @@ const ModelSettingElemnt = ({
 		() =>
 			atom(
 				(get) =>
-					get(modelConfigAtom)[model]?.[optKey] ||
-					option.value ||
-					option.default,
+					[
+						get(modelConfigAtom)[model]?.[optKey],
+						option.value,
+						option.default,
+					].filter((v) => v !== undefined)[0],
 				(get, set, newVal: string | number | boolean) => {
 					set(modelConfigAtom, (draft) => {
 						draft[model] = draft[model] || {};
@@ -478,19 +480,23 @@ const ModelSettingElemnt = ({
 	const [val, setVal] = useAtom(_atom);
 
 	return (
-		<div className="flex flex-col items-start">
-			<Label htmlFor={option.name} className="flex flex-col">
+		<div
+			className={cn(
+				"flex flex-col items-start",
+				typeof val === "boolean" && "flex-row-reverse items-center gap-x-2",
+			)}
+		>
+			<Label htmlFor={option.name} className="flex flex-col flex-grow">
 				<span className="text-sm font-bold">{option.name}</span>
 				<span className="text-xs mt-0.5 font-medium text-muted-foreground mb-1.5">
 					{option.description}
 				</span>
 			</Label>
 			{typeof val === "boolean" ? (
-				<Input
+				<Checkbox
 					id={option.name}
-					type="checkbox"
-					checked={val as boolean}
-					onChange={(e) => setVal(e.target.checked)}
+					checked={val === true}
+					onCheckedChange={(e) => setVal(e === true)}
 				/>
 			) : (
 				<Input
