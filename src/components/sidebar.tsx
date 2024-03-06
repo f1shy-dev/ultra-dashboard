@@ -80,14 +80,14 @@ export function Sidebar({
 							key={section.title}
 							className={cn("py-2", !isMobile && "px-3")}
 						>
-							<h2
+							<span
 								className={cn(
 									"tracking-tight mb-2",
 									isMobile ? "text-sm font-bold" : "text-lg font-semibold px-4",
 								)}
 							>
 								{section.title}
-							</h2>
+							</span>
 							<div className="space-y-1">
 								{section.items.map((item) => {
 									const Icon = item.icon;

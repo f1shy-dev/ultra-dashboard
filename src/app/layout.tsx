@@ -7,6 +7,7 @@ import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
 import { SWRConfig } from "swr";
 import "./globals.css";
+import { Provider } from "jotai";
 
 const fontSans = FontSans({
 	subsets: ["latin"],
@@ -35,26 +36,28 @@ export default function RootLayout({
 					fontSans.variable,
 				)}
 			>
-				<ThemeProvider
-					attribute="class"
-					defaultTheme="system"
-					enableSystem
-					disableTransitionOnChange
-				>
-					<div>
-						<Menu />
-						<div className="border-t">
-							<div className="bg-background">
-								<div className="grid lg:grid-cols-5">
-									<Sidebar className="hidden lg:block" />
-									<div className="col-span-3 lg:col-span-4 lg:border-l">
-										{children}
+				<Provider>
+					<ThemeProvider
+						attribute="class"
+						defaultTheme="system"
+						enableSystem
+						disableTransitionOnChange
+					>
+						<div>
+							<Menu />
+							<div className="border-t">
+								<div className="bg-background">
+									<div className="grid lg:grid-cols-5">
+										<Sidebar className="hidden lg:block" />
+										<div className="col-span-3 lg:col-span-4 lg:border-l">
+											{children}
+										</div>
 									</div>
 								</div>
 							</div>
 						</div>
-					</div>
-				</ThemeProvider>
+					</ThemeProvider>
+				</Provider>
 			</body>
 		</html>
 	);

@@ -1,56 +1,32 @@
 "use client";
 
-import useLocalStorage from "@/lib/useLocalStorage";
-import { Entry, RootFolder } from "../shared";
+import {
+	ChatEntry,
+	ChatStorage,
+	Entry,
+	RootFolder,
+	StorageUpdater,
+} from "../shared";
 import { useMemo, useState } from "react";
 import { MingcuteMessage2Line } from "@/icons/Mingcute";
 import { ChatWindow } from "./chat_window";
+import { useLocalStorageValue } from "@react-hookz/web";
+import { useAtom } from "jotai";
+import { singleChatAtom } from "@/app/tools/ai_chat/atoms";
 
 export default function Page({
 	params: { path },
 }: { params: { path: string[] } }) {
-	const [chats, setChats] = useLocalStorage<RootFolder>("ai_chats", []);
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	const chat = useMemo(() => {
-		let current = chats;
-		for (let i = 0; i < path.length; i++) {
-			const current_path = path[i];
-			if (i === path.length - 1) {
-				return current.find((c) => c.id === current_path);
-			}
-			const folder = current.find((c) => c.id === current_path);
-			if (!folder || folder.type !== "folder") {
-				return undefined;
-			}
-			current = folder.entries;
-		}
-		return current;
-	}, [chats, path]) as Entry | undefined;
-
-	const updateChat = (newChat: Entry) => {
-		let current = chats;
-		for (let i = 0; i < path.length; i++) {
-			const current_path = path[i];
-			if (i === path.length - 1) {
-				current = current.map((c) => (c.id === current_path ? newChat : c));
-				break;
-			}
-			const folder = current.find((c) => c.id === current_path);
-			if (!folder || folder.type !== "folder") {
-				return;
-			}
-			current = folder.entries;
-		}
-	};
+	const [chat, setChat] = useAtom(useMemo(() => singleChatAtom(path), [path]));
 
 	return (
 		<div className="flex flex-col w-full h-[calc(100vh-2.25rem)]">
 			<div className="flex border-b px-3 py-1.5 text-sm items-center font-medium h-[2.25rem]">
 				<MingcuteMessage2Line className="w-4 h-4 mr-2" />
-				{chat?.name}
+				{chat?.name || ""}
 			</div>
 			{chat?.type === "chat" && (
-				<ChatWindow chat={chat} updateChat={updateChat} />
+				<ChatWindow atom={[chat, setChat]} path={path} />
 			)}
 		</div>
 	);

@@ -22,11 +22,22 @@ export type InstructPromptEntry = EntryBase & {
 };
 
 export type Entry = ChatEntry | StructuredPromptEntry | InstructPromptEntry;
+export type ChatStorage = {
+	[key: string]: Entry;
+};
+
+export type PointerEntry = {
+	type: "pointer";
+	refId: string;
+	refType: "chat" | "structured-prompt" | "instruct-prompt";
+};
 
 export type Folder = {
 	name: string;
 	type: "folder";
 	id: string;
-	entries: (Entry | Folder)[];
+	entries: (PointerEntry | Folder)[];
 };
-export type RootFolder = (Entry | Folder)[];
+export type RootFolder = (PointerEntry | Folder)[];
+
+export type StorageUpdater<T> = (newValue: T | ((oldValue: T) => T)) => void;

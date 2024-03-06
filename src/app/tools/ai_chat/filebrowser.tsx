@@ -20,6 +20,7 @@ import {
 	MingcuteFolderLine,
 	MingcuteMessage2Line,
 	MingcutePencilLine,
+	MingcuteSettings1Line,
 } from "@/icons/Mingcute";
 import {
 	Dialog,
@@ -36,7 +37,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { RefObject, Suspense, useMemo, useRef, useState } from "react";
 // import { useLocalStorage } from "react-use";
-import useLocalStorage from "@/lib/useLocalStorage";
 import { Input } from "@/components/ui/input";
 import { cn, generateShortUUID } from "@/lib/utils";
 import {
@@ -60,7 +60,17 @@ import {
 } from "@/components/ui/context-menu";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { RootFolder, Folder, Entry } from "./shared";
+import { Checkbox } from "@/components/ui/checkbox";
+
+import { RootFolder, Folder, ChatStorage } from "./shared";
+import { atom, useAtom } from "jotai";
+import {
+	chatFilesystemAtom,
+	chatStorageAtom,
+	generalConfigAtom,
+	modelConfigAtom,
+} from "@/app/tools/ai_chat/atoms";
+import { UserExposedOption } from "./models/model_adapter";
 
 const iconMap = {
 	chat: MingcuteMessage2Line,
@@ -86,16 +96,20 @@ const nameMap = {
 };
 
 export default function FileBrowser() {
-	const [chats, setChats] = useLocalStorage<RootFolder>("ai_chats", []);
+	const [chatFS, setChatFS] = useAtom(chatFilesystemAtom);
+	const [chatStorage, setChatStorage] = useAtom(chatStorageAtom);
+
 	const [addDialogState, setAddDialogState] = useState<
 		"closed" | "folder" | "chat" | "structured-prompt" | "instruct-prompt"
 	>("closed");
+	const [providerSettingDialogOpen, setProviderSettingDialogOpen] =
+		useState(false);
 	const [addDialogModel, setAddDialogModel] = useState("");
 	const [path, setPath] = useState<string[]>([]);
 	const [nameInputRef] = [useRef(null)] as RefObject<HTMLInputElement>[];
 	const router = useRouter();
 
-	let currentFolder = chats;
+	let currentFolder = chatFS;
 	for (const folderName of path) {
 		currentFolder = (currentFolder as Folder[]).find(
 			(folder) => folder.id === folderName,
@@ -103,40 +117,81 @@ export default function FileBrowser() {
 	}
 
 	const create = () => {
-		if (!nameInputRef.current?.value) return;
-		const cf_copy = currentFolder || chats || [];
+		if (!nameInputRef.current || !nameInputRef.current.value) return;
+		const id = generateShortUUID();
+
+		const currentFS = currentFolder || chatFS || [];
+
 		if (addDialogState === "folder") {
-			cf_copy.push({
+			currentFS.push({
 				name: nameInputRef.current.value,
 				type: "folder",
-				id: generateShortUUID(),
+				id,
 				entries: [],
 			});
-		}
-		if (addDialogState !== "folder" && addDialogState !== "closed") {
-			cf_copy.push({
-				name: nameInputRef.current.value,
-				type: addDialogState,
-				id: generateShortUUID(),
-				modelId: addDialogModel,
-				messages: [],
-			} as Entry);
-		}
+		} else if (addDialogState !== "closed") {
+			currentFS.push({
+				type: "pointer",
+				refId: id,
+				refType: addDialogState,
+			});
 
-		if (path.length === 0) {
-			setChats(cf_copy);
-		} else {
-			const pathCopy = [...path];
-			const lastFolderId = pathCopy.pop();
-			const lastFolder = chats?.find((folder) => folder.id === lastFolderId);
-			if (lastFolder && lastFolder.type === "folder") {
-				lastFolder.entries = cf_copy;
-				setChats(chats);
+			switch (addDialogState) {
+				case "chat":
+					setChatStorage((draft) => {
+						draft[id] = {
+							type: "chat",
+							id,
+							name: nameInputRef.current?.value || "Chat",
+							modelId: addDialogModel,
+							messages: [],
+						};
+					});
+					break;
+				case "structured-prompt":
+					setChatStorage((draft) => {
+						draft[id] = {
+							type: "structured-prompt",
+							id,
+							name: nameInputRef.current?.value || "Structured Prompt",
+							modelId: addDialogModel,
+							prompts: [],
+						};
+					});
+					break;
+				case "instruct-prompt":
+					setChatStorage((draft) => {
+						draft[id] = {
+							type: "instruct-prompt",
+							id,
+							name: nameInputRef.current?.value || "Instruct Prompt",
+							modelId: addDialogModel,
+							prompt: "",
+						};
+					});
+					break;
+			}
+
+			if (path.length === 0) {
+				setChatFS(currentFS);
+			} else {
+				const copy = chatFS || [];
+				const pathCopy = [...path];
+				const lastFolderId = pathCopy.pop();
+				const lastFolder = copy?.find(
+					(folder) => folder.type === "folder" && folder.id === lastFolderId,
+				);
+				if (lastFolder && lastFolder.type === "folder") {
+					lastFolder.entries = currentFS;
+					setChatFS(copy);
+				}
 			}
 		}
 
 		setAddDialogState("closed");
 	};
+
+	if (chatStorage === undefined) return <div>Loading...</div>;
 
 	return (
 		<>
@@ -183,18 +238,29 @@ export default function FileBrowser() {
 				</DialogContent>
 			</Dialog>
 
+			<ProviderSettingsDialog
+				open={providerSettingDialogOpen}
+				setOpen={setProviderSettingDialogOpen}
+			/>
+
 			<Card className="border-none sm:border-solid w-full relative max-w-lg sm:max-h-[32rem]">
 				<DropdownMenu>
 					{/* <DropdownMenuTrigger>Open</DropdownMenuTrigger> */}
-					<DropdownMenuTrigger asChild>
+					<div className="absolute top-4 right-4 flex">
 						<Button
-							className="absolute top-4 right-4"
-							variant="default"
+							variant="outline"
 							size="icon"
+							className="mr-1"
+							onClick={() => setProviderSettingDialogOpen(true)}
 						>
-							<PlusIcon className="w-5 h-5" />
+							<MingcuteSettings1Line className="w-5 h-5" />
 						</Button>
-					</DropdownMenuTrigger>
+						<DropdownMenuTrigger asChild>
+							<Button variant="default" size="icon">
+								<PlusIcon className="w-5 h-5" />
+							</Button>
+						</DropdownMenuTrigger>
+					</div>
 					<DropdownMenuContent>
 						<DropdownMenuLabel>New</DropdownMenuLabel>
 						<DropdownMenuSeparator />
@@ -239,29 +305,31 @@ export default function FileBrowser() {
 							</div>
 						)}
 						{currentFolder?.map((chat) => {
-							const IconComp = iconMap[chat.type];
+							const IconComp =
+								iconMap["refId" in chat ? chat.refType : chat.type];
+							const id = "refId" in chat ? chat.refId : chat.id;
 							return (
-								<ContextMenu key={chat.id}>
+								<ContextMenu key={id}>
 									<ContextMenuTrigger asChild>
 										<div
 											onClick={() => {
 												if (chat.type === "folder")
 													return setPath([...path, chat.id]);
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 											onKeyDown={() => {
 												if (chat.type === "folder")
 													return setPath([...path, chat.id]);
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 											className="rounded-md transition-all px-3 py-2 hover:bg-muted/50 text-sm flex items-center"
 										>
 											<IconComp className="w-4.5 h-4.5 mr-2" />
-											{chat.name}
+											{"name" in chat ? chat.name : chatStorage[id]?.name}
 											<div className="flex-grow" />
 											<ArrowRightIcon className="w-4 h-4 text-muted-foreground" />
 										</div>
@@ -270,7 +338,7 @@ export default function FileBrowser() {
 										<ContextMenuItem
 											onClick={() => {
 												router.push(
-													`/tools/ai_chat/${[...path, chat.id].join("/")}`,
+													`/tools/ai_chat/${[...path, id].join("/")}`,
 												);
 											}}
 										>
@@ -308,10 +376,143 @@ export default function FileBrowser() {
 	);
 }
 
+const ProviderSettingsDialog = ({
+	open,
+	setOpen,
+}: { open: boolean; setOpen: (open: boolean) => void }) => {
+	const [model, setModel] = useState("");
+	const [config, setConfig] = useAtom(generalConfigAtom);
+	const adapter = modelAdapters.find((ad) => ad.id === model);
+	return (
+		<Dialog open={open} onOpenChange={setOpen}>
+			<DialogContent>
+				<DialogHeader>
+					<DialogTitle>Settings</DialogTitle>
+				</DialogHeader>
+				<div className="flex flex-col">
+					<div className="flex items-center space-x-2">
+						<Checkbox
+							id="enable-streamed-model-cb"
+							checked={config.ai.useStream}
+							onCheckedChange={(e) =>
+								setConfig({
+									...config,
+									ai: { ...config.ai, useStream: e === true },
+								})
+							}
+						/>
+						<label
+							htmlFor="enable-streamed-model-cb"
+							className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+						>
+							Enable streamed model responses
+						</label>
+					</div>
+
+					<span className="font-semibold text-sm mt-4">Per-Model Settings</span>
+					<DialogDescription className="mb-2">
+						Change the global default settings for each AI model. These can also
+						be changed per chat.
+					</DialogDescription>
+					<ModelPickerCombobox
+						value={model}
+						setValue={setModel}
+						btnClassName="w-full"
+					/>
+					<div className="mt-4 flex flex-col">
+						{adapter?.userExposedOptions !== undefined ? (
+							Object.keys(adapter.userExposedOptions).map((key) => {
+								const option =
+									// biome-ignore lint/style/noNonNullAssertion: <explanation>
+									adapter.userExposedOptions![
+										key as keyof typeof adapter.userExposedOptions
+									];
+
+								return (
+									<ModelSettingElemnt
+										optKey={key}
+										option={option}
+										model={model}
+										key={`${model}-${key}`}
+									/>
+								);
+							})
+						) : (
+							<div className="text-muted-foreground text-sm">
+								No settings available for this model.
+							</div>
+						)}
+					</div>
+				</div>
+			</DialogContent>
+		</Dialog>
+	);
+};
+
+const ModelSettingElemnt = ({
+	option,
+	model,
+	optKey,
+}: {
+	option: UserExposedOption;
+	model: string;
+	optKey: string;
+}) => {
+	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
+	const _atom = useMemo(
+		() =>
+			atom(
+				(get) =>
+					get(modelConfigAtom)[model]?.[optKey] ||
+					option.value ||
+					option.default,
+				(get, set, newVal: string | number | boolean) => {
+					set(modelConfigAtom, (draft) => {
+						draft[model] = draft[model] || {};
+						draft[model][optKey] = newVal;
+					});
+				},
+			),
+		[model, optKey, option],
+	);
+	const [val, setVal] = useAtom(_atom);
+
+	return (
+		<div className="flex flex-col items-start">
+			<Label htmlFor={option.name} className="flex flex-col">
+				<span className="text-sm font-bold">{option.name}</span>
+				<span className="text-xs mt-0.5 font-medium text-muted-foreground mb-1.5">
+					{option.description}
+				</span>
+			</Label>
+			{typeof val === "boolean" ? (
+				<Input
+					id={option.name}
+					type="checkbox"
+					checked={val as boolean}
+					onChange={(e) => setVal(e.target.checked)}
+				/>
+			) : (
+				<Input
+					id={option.name}
+					value={val}
+					onChange={(e) => setVal(e.target.value)}
+					placeholder={option.placeholder}
+				/>
+			)}
+		</div>
+	);
+};
+
 const ModelPickerCombobox = ({
 	value,
 	setValue,
-}: { value: string; setValue: (value: string) => void }) => {
+	btnClassName,
+}: {
+	value: string;
+	setValue: (value: string) => void;
+	btnClassName?: string;
+}) => {
 	const [open, setOpen] = useState(false);
 
 	return (
@@ -321,7 +522,7 @@ const ModelPickerCombobox = ({
 					variant="outline"
 					role="combobox"
 					aria-expanded={open}
-					className="w-[200px] justify-between col-span-3"
+					className={cn("w-[200px] justify-between col-span-3", btnClassName)}
 				>
 					{value
 						? modelAdapters.find((ad) => ad.id === value)?.name
