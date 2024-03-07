@@ -111,7 +111,7 @@ export function Sidebar({
 														: item.route.some((r) =>
 																	typeof r === "string"
 																		? r === pathname
-																		: (r as RegExp).test(pathname),
+																		: (r as RegExp).test(pathname || ""),
 															  )
 														  ? "secondary"
 														  : "ghost"
