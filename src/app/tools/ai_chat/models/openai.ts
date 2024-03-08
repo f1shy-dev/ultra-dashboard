@@ -4,7 +4,7 @@ import {
 	ToolCall,
 	ToolfulModelInit,
 	UserExposedOptions,
-} from "./model_adapter";
+} from "../shared/model_adapter";
 import {
 	CustomEventDataType,
 	CustomEventType,

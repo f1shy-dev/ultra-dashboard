@@ -12,7 +12,7 @@ import { MingcuteMessage2Line } from "@/icons/Mingcute";
 import { ChatWindow } from "./chat_window";
 import { useLocalStorageValue } from "@react-hookz/web";
 import { useAtom } from "jotai";
-import { singleChatAtom } from "@/app/tools/ai_chat/atoms";
+import { singleChatAtom } from "@/app/tools/ai_chat/shared/atoms";
 
 export default function Page({
 	params: { path },

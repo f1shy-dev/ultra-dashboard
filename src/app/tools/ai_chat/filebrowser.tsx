@@ -69,8 +69,8 @@ import {
 	chatStorageAtom,
 	generalConfigAtom,
 	modelConfigAtom,
-} from "@/app/tools/ai_chat/atoms";
-import { UserExposedOption } from "./models/model_adapter";
+} from "@/app/tools/ai_chat/shared/atoms";
+import { UserExposedOption } from "./shared/model_adapter";
 
 const iconMap = {
 	chat: MingcuteMessage2Line,

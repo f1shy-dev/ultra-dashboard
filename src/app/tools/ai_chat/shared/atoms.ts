@@ -1,8 +1,8 @@
-import { ChatStorage, Entry, RootFolder } from "./shared";
+import { ChatStorage, Entry, RootFolder } from ".";
 import { atomWithStorage } from "jotai/utils";
 import { atom } from "jotai";
 import { withImmer } from "jotai-immer";
-import { UserExposedOptionsValuesStore } from "./models/model_adapter";
+import { UserExposedOptionsValuesStore } from "./model_adapter";
 
 export const modelConfigAtom = withImmer(
 	atomWithStorage<UserExposedOptionsValuesStore<string>>("atom-model_opts", {}),
@@ -26,8 +26,6 @@ export const chatStorageAtom = withImmer(
 export const chatFilesystemAtom = withImmer(
 	atomWithStorage<RootFolder>("atom-chat_fs", []),
 );
-
-console.log("*atoms.init", chatStorageAtom, chatFilesystemAtom);
 
 export const singleChatAtom = (path: string[]) =>
 	atom(

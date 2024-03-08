@@ -1,4 +1,4 @@
-import { ChatHistory } from "./models/model_adapter";
+import { ChatHistory } from "./model_adapter";
 
 type EntryBase = {
 	id: string;

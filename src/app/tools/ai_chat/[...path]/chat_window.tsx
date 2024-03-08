@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { modelAdapters } from "../models";
 import { cn, generateShortUUID } from "@/lib/utils";
 import { useAtom, atom as atomFactory, useAtomValue } from "jotai";
-import { generalConfigAtom, modelConfigAtom } from "../atoms";
+import { generalConfigAtom, modelConfigAtom } from "../shared/atoms";
 import { Skeleton } from "@/components/ui/skeleton";
 
 // million-ignore
