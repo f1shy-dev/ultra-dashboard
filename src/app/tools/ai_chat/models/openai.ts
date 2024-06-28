@@ -56,7 +56,7 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 		userExposedOptions,
 		supportsTools: true,
 		streamAnimationWordClamp: 3,
-		generate: async ({ messages, options, userOptions }) => {
+		generate: async ({ messages, options, userOptions, tools }) => {
 			const res = await fetch("https://api.openai.com/v1/chat/completions", {
 				method: "POST",
 				headers: {
@@ -74,6 +74,14 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 					top_p: options.topP || 1,
 					frequency_penalty: options.frequencyPenalty || 0,
 					presence_penalty: options.presencePenalty || 0,
+					tools: tools.map((tool) => ({
+						type: "function",
+						function: {
+							name: tool.name,
+							description: tool.description,
+							parameters: tool.schema,
+						},
+					})),
 				}),
 			});
 
@@ -91,13 +99,18 @@ const OpenAIAdapterBuilder: OpenAIAdapterBuilderType = ({
 			const toolCalls: ToolCall<unknown>[] = [];
 			try {
 				if (data.choices[0].message.tool_calls) {
+					console.log(data, "*has tool calls*");
 					for (const toolCall of data.choices[0].message.tool_calls) {
-						const functionName = toolCall.function.name;
-						const functionArgs = JSON.parse(toolCall.function.arguments);
+						const tool = tools.find((t) => t.name === toolCall.function.name);
+						if (!tool) {
+							continue;
+						}
+						const args = JSON.parse(toolCall.function.arguments);
+						console.log("*toolCall*", toolCall, "*args*", args);
 						toolCalls.push({
-							toolId: functionName,
+							toolName: tool.name,
 							callId: toolCall.id,
-							data: functionArgs,
+							data: await tool.run(args),
 						});
 					}
 				}

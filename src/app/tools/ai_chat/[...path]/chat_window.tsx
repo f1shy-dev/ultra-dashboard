@@ -16,6 +16,8 @@ import { cn, generateShortUUID } from "@/lib/utils";
 import { useAtom, atom as atomFactory, useAtomValue } from "jotai";
 import { generalConfigAtom, modelConfigAtom } from "../shared/atoms";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BingSearchTool } from "../tools/bing_search";
+import { ToolfulModelResponse } from "../shared/model_adapter";
 
 // million-ignore
 export const ChatWindow: React.FC<{
@@ -75,7 +77,7 @@ export const ChatWindow: React.FC<{
 					apiKey: optsAtom?.apiKey || "",
 					useProxy: optsAtom?.useProxy,
 				},
-				tools: [],
+				tools: [BingSearchTool],
 				onMessageUpdate(message) {
 					setChat((old) => {
 						const messages = [...(old as ChatEntry).messages].filter(
@@ -115,13 +117,28 @@ export const ChatWindow: React.FC<{
 					apiKey: optsAtom?.apiKey || "",
 					useProxy: optsAtom?.useProxy,
 				},
-				tools: [],
+				tools: [BingSearchTool],
 			});
 
 			setChat((old) => {
 				const messages = [...(old as ChatEntry).messages].filter(
 					(m) => m.id !== baseMessage.id,
 				);
+				if (
+					modelAdapter.supportsTools &&
+					(data as ToolfulModelResponse).toolCalls !== undefined
+				) {
+					// biome-ignore lint/correctness/noUnsafeOptionalChaining: <explanation>
+					for (const toolCall of (data as ToolfulModelResponse)?.toolCalls) {
+						messages.push({
+							id: `tool-${generateShortUUID()}-${toolCall.callId}`,
+							type: "tool-call",
+							content: JSON.stringify(toolCall.data),
+							status: "success",
+							timestamp: Date.now(),
+						});
+					}
+				}
 				messages.push({
 					...data,
 					id: baseMessage.id,

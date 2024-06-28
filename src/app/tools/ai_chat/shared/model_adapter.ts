@@ -77,8 +77,7 @@ interface Message extends MessageBase<string> {
 
 export type ChatHistory = (Message | ToolResponse<unknown>)[];
 
-type Tool<T, S> = {
-	id: string;
+export type Tool<T, S> = {
 	name: string;
 	description: string;
 	run: (data: T) => Promise<ToolResponse<S>>;
@@ -86,7 +85,7 @@ type Tool<T, S> = {
 };
 
 export type ToolCall<T> = {
-	toolId: string;
+	toolName: string;
 	callId?: string;
 	data: T;
 };
@@ -125,13 +124,16 @@ export interface ToollessModelInit<T extends string> extends _ModelInit<T> {
 	}) => void;
 }
 
+// biome-ignore lint/suspicious/noExplicitAny: <explanation>
+type AnyTool = Tool<any, any>;
+
 export interface ToolfulModelInit<T extends string> extends _ModelInit<T> {
 	supportsTools: true;
 	generate: (config: {
 		messages: ChatHistory;
 		options: Partial<GenerationOptions>;
 		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
-		tools: Tool<unknown, unknown>[];
+		tools: AnyTool[];
 	}) => Promise<ToolfulModelResponse>;
 
 	streamGenerate?: (config: {
@@ -139,7 +141,7 @@ export interface ToolfulModelInit<T extends string> extends _ModelInit<T> {
 		options: Partial<GenerationOptions>;
 		userOptions: UserExposedOptionsValue<T, UserExposedOptions<T>>;
 		onMessageUpdate: (message: ModelResponse) => void;
-		tools: Tool<unknown, unknown>[];
-		messageBase?: Partial<ModelResponse>;
+		tools: AnyTool[];
+		messageBase?: Partial<ToolfulModelResponse>;
 	}) => void;
 }
